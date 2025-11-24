@@ -1,16 +1,16 @@
 import express from 'express';
 import cors from 'cors';
-import { connectDB } from './config/database.js';
-import User from './models/User.js';
-import OTP from './models/OTP.js';
-import GameHistory from './models/GameHistory.js';
-import Transaction from './models/Transaction.js';
-import Message from './models/Message.js';
-import PaymentRequest from './models/PaymentRequest.js';
-import GameSettings from './models/GameSettings.js';
-import GlobalSettings from './models/GlobalSettings.js';
-import PlatformStats from './models/PlatformStats.js';
-import { authenticate, isAdmin } from './middleware/auth.js';
+import { connectDB } from '../lib/config/database.js';
+import User from '../lib/models/User.js';
+import OTP from '../lib/models/OTP.js';
+import GameHistory from '../lib/models/GameHistory.js';
+import Transaction from '../lib/models/Transaction.js';
+import Message from '../lib/models/Message.js';
+import PaymentRequest from '../lib/models/PaymentRequest.js';
+import GameSettings from '../lib/models/GameSettings.js';
+import GlobalSettings from '../lib/models/GlobalSettings.js';
+import PlatformStats from '../lib/models/PlatformStats.js';
+import { authenticate, isAdmin } from '../lib/middleware/auth.js';
 import jwt from 'jsonwebtoken';
 
 const app = express();
