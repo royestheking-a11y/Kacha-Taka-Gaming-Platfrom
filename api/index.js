@@ -126,6 +126,47 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Test endpoint to verify MongoDB data
+app.get('/api/test/mongodb', async (req, res) => {
+  try {
+    await connectDB();
+    
+    // Count users
+    const userCount = await User.countDocuments();
+    const users = await User.find().select('name email createdAt').limit(5).sort({ createdAt: -1 });
+    
+    // Count game history
+    const gameHistoryCount = await GameHistory.countDocuments();
+    
+    // Count transactions
+    const transactionCount = await Transaction.countDocuments();
+    
+    res.json({
+      status: 'OK',
+      mongodb: 'Connected',
+      counts: {
+        users: userCount,
+        gameHistory: gameHistoryCount,
+        transactions: transactionCount
+      },
+      recentUsers: users.map(u => ({
+        id: u._id.toString(),
+        name: u.name,
+        email: u.email,
+        createdAt: u.createdAt
+      })),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'ERROR', 
+      message: 'MongoDB test failed',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // ==================== AUTH ROUTES ====================
 app.post('/api/auth/register', async (req, res) => {
   try {
