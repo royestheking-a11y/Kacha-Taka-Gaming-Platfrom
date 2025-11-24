@@ -562,6 +562,8 @@ app.post('/api/games/history', authenticate, async (req, res) => {
     console.log('[GAME_HISTORY] Saving game history for user:', req.user._id);
     console.log('[GAME_HISTORY] Request body:', req.body);
     await connectDB();
+    console.log('[GAME_HISTORY] Database name:', mongoose.connection.db?.databaseName);
+    console.log('[GAME_HISTORY] GameHistory collection name:', GameHistory.collection.name);
     
     const gameHistoryData = {
       ...req.body,
@@ -579,6 +581,10 @@ app.post('/api/games/history', authenticate, async (req, res) => {
     // Verify save
     const verifyHistory = await GameHistory.findById(gameHistory._id);
     console.log('[GAME_HISTORY] Verification - History exists:', !!verifyHistory);
+    
+    // Count total game history
+    const totalHistory = await GameHistory.countDocuments();
+    console.log('[GAME_HISTORY] Total game history in database:', totalHistory);
     
     res.status(201).json(gameHistory);
   } catch (error) {
