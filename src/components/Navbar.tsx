@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription, SheetH
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/App';
-import { formatCurrency } from '@/utils/storage';
+import { formatCurrency } from '@/utils/storageMongo';
 
 interface NavbarProps {
   user: User | null;

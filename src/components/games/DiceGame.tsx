@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { User } from '@/App';
 import { generateGameResult } from '@/utils/provablyFair';
-import { addGameHistory, formatCurrency, getGameSettings } from '@/utils/storage';
+import { addGameHistory, formatCurrency, getGameSettings } from '@/utils/storageMongo';
 import { soundManager } from '@/utils/audio';
 import { toast } from 'sonner';
 import { BalanceSelector } from '@/components/BalanceSelector';

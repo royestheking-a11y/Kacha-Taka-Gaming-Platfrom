@@ -3,19 +3,54 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { getAllUsers, getReferrals } from '@/utils/storage';
+import { getAllUsers, getReferrals } from '@/utils/storageMongo';
 import { User } from '@/App';
 import { Users, TrendingUp, DollarSign, Award } from 'lucide-react';
 
 export function AdminReferrals() {
   const [search, setSearch] = useState('');
-  const users = getAllUsers();
-  
-  // Calculate referral stats
-  const usersWithReferrals = users.map(user => ({
-    ...user,
-    referralCount: getReferrals(user.id).length
-  })).filter(u => u.referralCount > 0 || (u.referralEarnings && u.referralEarnings > 0));
+  const [users, setUsers] = useState<User[]>([]);
+  const [usersWithReferrals, setUsersWithReferrals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      // Only load if user is authenticated
+      const token = localStorage.getItem('kachaTaka_token');
+      if (!token) {
+        console.warn('[AdminReferrals] No authentication token found');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const allUsers = await getAllUsers();
+        setUsers(allUsers);
+        
+        // Load referrals for each user
+        const usersWithRefs = await Promise.all(
+          allUsers.map(async (user) => {
+            const referrals = await getReferrals(user.id);
+            return {
+              ...user,
+              referralCount: referrals.length
+            };
+          })
+        );
+        
+        const filtered = usersWithRefs.filter(u => 
+          u.referralCount > 0 || (u.referralEarnings && u.referralEarnings > 0)
+        );
+        setUsersWithReferrals(filtered);
+      } catch (error) {
+        console.error('[AdminReferrals] Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
 
   const filtered = usersWithReferrals.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -111,9 +146,13 @@ export function AdminReferrals() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((user) => {
-                const referrals = getReferrals(user.id);
-                return (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filtered.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex flex-col">
@@ -140,8 +179,7 @@ export function AdminReferrals() {
                       </Badge>
                     </TableCell>
                   </TableRow>
-                );
-              })}
+                ))}
             </TableBody>
           </Table>
 

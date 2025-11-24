@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { User } from '@/App';
-import { formatCurrency } from '@/utils/storage';
+import { formatCurrency } from '@/utils/storageMongo';
 
 interface DailySpinProps {
   user: User;

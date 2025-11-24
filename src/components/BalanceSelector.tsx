@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Wallet, AlertCircle } from 'lucide-react';
-import { formatCurrency } from '@/utils/storage';
+import { formatCurrency } from '@/utils/storageMongo';
 import { Badge } from '@/components/ui/badge';
 
 interface BalanceSelectorProps {
