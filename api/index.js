@@ -170,7 +170,7 @@ app.get('/api/test/mongodb', async (req, res) => {
 // ==================== AUTH ROUTES ====================
 app.post('/api/auth/register', async (req, res) => {
   try {
-    console.log('[REGISTER] Request received:', { email: req.body?.email, name: req.body?.name });
+    console.log('[REGISTER] Request received:', { email: req.body && req.body.email, name: req.body && req.body.name });
     await connectDB();
     console.log('[REGISTER] Database connected');
     
@@ -256,7 +256,7 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
-    console.log('[LOGIN] Request received:', { email: req.body?.email });
+    console.log('[LOGIN] Request received:', { email: req.body && req.body.email });
     await connectDB();
     console.log('[LOGIN] Database connected');
     
@@ -397,7 +397,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
 app.get('/api/auth/me', async (req, res) => {
   try {
     await connectDB();
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const authHeader = req.header('Authorization');
+    const token = authHeader ? authHeader.replace('Bearer ', '') : null;
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
@@ -502,8 +503,8 @@ app.put('/api/users/:id', authenticate, async (req, res) => {
     // Verify save
     const verifyUser = await User.findById(savedUser._id);
     console.log('[UPDATE_USER] Verification - Updated balance:', {
-      demoPoints: verifyUser?.demoPoints,
-      realBalance: verifyUser?.realBalance
+      demoPoints: verifyUser ? verifyUser.demoPoints : null,
+      realBalance: verifyUser ? verifyUser.realBalance : null
     });
     
     res.json(savedUser.toJSON());
@@ -581,7 +582,6 @@ app.get('/api/games/history', authenticate, async (req, res) => {
       .populate('userId', 'name email');
     
     console.log('[GET_GAME_HISTORY] Found history items:', history.length);
-      .populate('userId', 'name email');
 
     res.json(history);
   } catch (error) {
@@ -602,11 +602,11 @@ app.get('/api/games/stats', authenticate, async (req, res) => {
         totalWagered: await GameHistory.aggregate([
           { $match: { game: 'crash' } },
           { $group: { _id: null, total: { $sum: '$betAmount' } } }
-        ]).then(r => r[0]?.total || 0),
+        ]).then(r => (r && r[0] && r[0].total) || 0),
         totalWon: await GameHistory.aggregate([
           { $match: { game: 'crash' } },
           { $group: { _id: null, total: { $sum: '$winAmount' } } }
-        ]).then(r => r[0]?.total || 0),
+        ]).then(r => (r && r[0] && r[0].total) || 0),
         totalPlayers: await GameHistory.distinct('userId', { game: 'crash' }).then(r => r.length)
       },
       mines: {
@@ -614,11 +614,11 @@ app.get('/api/games/stats', authenticate, async (req, res) => {
         totalWagered: await GameHistory.aggregate([
           { $match: { game: 'mines' } },
           { $group: { _id: null, total: { $sum: '$betAmount' } } }
-        ]).then(r => r[0]?.total || 0),
+        ]).then(r => (r && r[0] && r[0].total) || 0),
         totalWon: await GameHistory.aggregate([
           { $match: { game: 'mines' } },
           { $group: { _id: null, total: { $sum: '$winAmount' } } }
-        ]).then(r => r[0]?.total || 0),
+        ]).then(r => (r && r[0] && r[0].total) || 0),
         totalPlayers: await GameHistory.distinct('userId', { game: 'mines' }).then(r => r.length)
       },
       slots: {
@@ -626,11 +626,11 @@ app.get('/api/games/stats', authenticate, async (req, res) => {
         totalWagered: await GameHistory.aggregate([
           { $match: { game: 'slots' } },
           { $group: { _id: null, total: { $sum: '$betAmount' } } }
-        ]).then(r => r[0]?.total || 0),
+        ]).then(r => (r && r[0] && r[0].total) || 0),
         totalWon: await GameHistory.aggregate([
           { $match: { game: 'slots' } },
           { $group: { _id: null, total: { $sum: '$winAmount' } } }
-        ]).then(r => r[0]?.total || 0),
+        ]).then(r => (r && r[0] && r[0].total) || 0),
         totalPlayers: await GameHistory.distinct('userId', { game: 'slots' }).then(r => r.length)
       },
       dice: {
@@ -638,11 +638,11 @@ app.get('/api/games/stats', authenticate, async (req, res) => {
         totalWagered: await GameHistory.aggregate([
           { $match: { game: 'dice' } },
           { $group: { _id: null, total: { $sum: '$betAmount' } } }
-        ]).then(r => r[0]?.total || 0),
+        ]).then(r => (r && r[0] && r[0].total) || 0),
         totalWon: await GameHistory.aggregate([
           { $match: { game: 'dice' } },
           { $group: { _id: null, total: { $sum: '$winAmount' } } }
-        ]).then(r => r[0]?.total || 0),
+        ]).then(r => (r && r[0] && r[0].total) || 0),
         totalPlayers: await GameHistory.distinct('userId', { game: 'dice' }).then(r => r.length)
       }
     };
