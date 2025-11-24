@@ -38,6 +38,7 @@ const apiRequest = async (endpoint, options = {}) => {
 
   try {
     console.log(`[API] ${options.method || 'GET'} ${url}`, options.body ? JSON.parse(options.body) : '');
+    console.log(`[API] Token present:`, !!token);
     const response = await fetch(url, config);
     
     // Check if response is JSON

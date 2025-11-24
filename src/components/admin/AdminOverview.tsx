@@ -9,7 +9,13 @@ export function AdminOverview() {
   const [allPaymentRequests, setAllPaymentRequests] = useState<any[]>([]);
 
   useEffect(() => {
-    loadData();
+    // Only load data if user is authenticated
+    const token = localStorage.getItem('kachaTaka_token');
+    if (token) {
+      loadData();
+    } else {
+      console.warn('[AdminOverview] No authentication token found');
+    }
   }, []);
 
   const loadData = async () => {

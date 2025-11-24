@@ -19,6 +19,14 @@ export function Dashboard({ user, onNavigate, updateUser }: DashboardProps) {
 
   useEffect(() => {
     const loadHistory = async () => {
+      // Only load if user is authenticated
+      const token = localStorage.getItem('kachaTaka_token');
+      if (!token) {
+        console.warn('[Dashboard] No authentication token found');
+        setLoading(false);
+        return;
+      }
+      
       try {
         const gameHistory = await getGameHistory(user.id);
         setHistory(gameHistory);

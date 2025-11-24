@@ -26,8 +26,14 @@ export function AdminUsers() {
   const [conversionRate, setConversionRate] = useState<number>(5);
 
   useEffect(() => {
-    loadSettings();
-    loadUsers();
+    // Only load data if user is authenticated
+    const token = localStorage.getItem('kachaTaka_token');
+    if (token) {
+      loadSettings();
+      loadUsers();
+    } else {
+      console.warn('[AdminUsers] No authentication token found');
+    }
   }, []);
 
   const loadSettings = async () => {
