@@ -37,7 +37,8 @@ const apiRequest = async (endpoint, options = {}) => {
   }
 
   try {
-    console.log(`[API] ${options.method || 'GET'} ${url}`, options.body ? JSON.parse(options.body) : '');
+    const bodyData = options.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : null;
+    console.log(`[API] ${options.method || 'GET'} ${url}`, bodyData || '');
     console.log(`[API] Token present:`, !!token);
     const response = await fetch(url, config);
     
@@ -65,7 +66,8 @@ const apiRequest = async (endpoint, options = {}) => {
         statusText: response.statusText,
         data: data
       });
-      throw new Error(data.message || `HTTP error! status: ${response.status} ${response.statusText}`);
+      const errorMessage = data && data.message ? data.message : `HTTP error! status: ${response.status} ${response.statusText}`;
+      throw new Error(errorMessage);
     }
 
     console.log(`[API] Success: ${options.method || 'GET'} ${url}`, data);
@@ -75,7 +77,8 @@ const apiRequest = async (endpoint, options = {}) => {
       error: error.message,
       stack: error.stack,
       url: url,
-      config: { method: options.method, headers: config.headers }
+      method: options.method,
+      hasBody: !!options.body
     });
     throw error;
   }
