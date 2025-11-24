@@ -161,14 +161,31 @@ app.post('/api/auth/register', async (req, res) => {
       }
     }
 
-    console.log('[REGISTER] Creating user...');
+    console.log('[REGISTER] Creating user with data:', userData);
     const user = await User.create(userData);
-    console.log('[REGISTER] User created:', user._id, user.email);
+    console.log('[REGISTER] User created in MongoDB:', { 
+      id: user._id.toString(), 
+      email: user.email, 
+      name: user.name,
+      demoPoints: user.demoPoints,
+      realBalance: user.realBalance
+    });
     
     user.referralCode = user.generateReferralCode();
-    await user.save();
-    console.log('[REGISTER] User saved with referral code:', user.referralCode);
-    console.log('[REGISTER] User data:', { id: user._id, email: user.email, name: user.name });
+    const savedUser = await user.save();
+    console.log('[REGISTER] User saved with referral code:', savedUser.referralCode);
+    console.log('[REGISTER] User saved to MongoDB - ID:', savedUser._id.toString());
+    
+    // Verify user exists in database
+    const verifyUser = await User.findById(savedUser._id);
+    console.log('[REGISTER] Verification - User exists in DB:', !!verifyUser);
+    if (verifyUser) {
+      console.log('[REGISTER] Verification - User data:', {
+        id: verifyUser._id.toString(),
+        email: verifyUser.email,
+        name: verifyUser.name
+      });
+    }
 
     if (user.referredBy) {
       const referrer = await User.findById(user.referredBy);
@@ -360,10 +377,17 @@ app.get('/api/auth/me', async (req, res) => {
 // ==================== USER ROUTES ====================
 app.get('/api/users', authenticate, isAdmin, async (req, res) => {
   try {
+    console.log('[GET_USERS] Request received from admin:', req.user.email);
     await connectDB();
+    console.log('[GET_USERS] Database connected');
+    
     const users = await User.find().select('-password').sort({ createdAt: -1 });
+    console.log('[GET_USERS] Found users in MongoDB:', users.length);
+    console.log('[GET_USERS] User IDs:', users.map(u => u._id.toString()));
+    
     res.json(users);
   } catch (error) {
+    console.error('[GET_USERS] Error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -427,11 +451,24 @@ app.put('/api/users/:id', authenticate, async (req, res) => {
       if (req.body.phone !== undefined) user.phone = req.body.phone;
     }
 
-    await user.save();
-    console.log('[UPDATE_USER] User updated successfully:', req.params.id);
-    res.json(user.toJSON());
+    const savedUser = await user.save();
+    console.log('[UPDATE_USER] User saved to MongoDB:', {
+      id: savedUser._id.toString(),
+      demoPoints: savedUser.demoPoints,
+      realBalance: savedUser.realBalance
+    });
+    
+    // Verify save
+    const verifyUser = await User.findById(savedUser._id);
+    console.log('[UPDATE_USER] Verification - Updated balance:', {
+      demoPoints: verifyUser?.demoPoints,
+      realBalance: verifyUser?.realBalance
+    });
+    
+    res.json(savedUser.toJSON());
   } catch (error) {
     console.error('[UPDATE_USER] Error:', error);
+    console.error('[UPDATE_USER] Error stack:', error.stack);
     res.status(500).json({ message: error.message });
   }
 });
@@ -460,29 +497,49 @@ app.patch('/api/users/:id/balance', authenticate, isAdmin, async (req, res) => {
 app.post('/api/games/history', authenticate, async (req, res) => {
   try {
     console.log('[GAME_HISTORY] Saving game history for user:', req.user._id);
+    console.log('[GAME_HISTORY] Request body:', req.body);
     await connectDB();
-    const gameHistory = await GameHistory.create({
+    
+    const gameHistoryData = {
       ...req.body,
       userId: req.user._id
+    };
+    console.log('[GAME_HISTORY] Creating with data:', gameHistoryData);
+    
+    const gameHistory = await GameHistory.create(gameHistoryData);
+    console.log('[GAME_HISTORY] Game history saved to MongoDB:', {
+      id: gameHistory._id.toString(),
+      userId: gameHistory.userId.toString(),
+      game: gameHistory.game
     });
-    console.log('[GAME_HISTORY] Game history saved:', gameHistory._id);
+    
+    // Verify save
+    const verifyHistory = await GameHistory.findById(gameHistory._id);
+    console.log('[GAME_HISTORY] Verification - History exists:', !!verifyHistory);
+    
     res.status(201).json(gameHistory);
   } catch (error) {
     console.error('[GAME_HISTORY] Error:', error);
+    console.error('[GAME_HISTORY] Error stack:', error.stack);
     res.status(500).json({ message: error.message });
   }
 });
 
 app.get('/api/games/history', authenticate, async (req, res) => {
   try {
+    console.log('[GET_GAME_HISTORY] Request from user:', req.user._id);
     await connectDB();
     const { game, limit = 100 } = req.query;
     const query = { userId: req.user._id };
     if (game) query.game = game;
 
+    console.log('[GET_GAME_HISTORY] Query:', query);
     const history = await GameHistory.find(query)
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
+      .populate('userId', 'name email');
+    
+    console.log('[GET_GAME_HISTORY] Found history items:', history.length);
       .populate('userId', 'name email');
 
     res.json(history);
