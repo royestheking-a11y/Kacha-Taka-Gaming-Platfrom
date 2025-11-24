@@ -4,16 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
-import { User } from '@/App';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '@/contexts/UserContext';
 
 interface PolicyPageProps {
   type: 'terms' | 'privacy' | 'responsible';
-  user: User | null;
-  onNavigate: (page: string) => void;
-  onLogout?: () => void;
 }
 
-export function PolicyPage({ type, user, onNavigate, onLogout }: PolicyPageProps) {
+export function PolicyPage({ type }: PolicyPageProps) {
+  const navigate = useNavigate();
+  const { user, logout } = useUser();
   const getContent = () => {
     switch (type) {
       case 'terms':
@@ -149,18 +149,14 @@ export function PolicyPage({ type, user, onNavigate, onLogout }: PolicyPageProps
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar 
-        user={user} 
-        onNavigate={onNavigate} 
-        onLogout={onLogout || (() => {})} 
-      />
+      <Navbar />
       
       <div className="flex-1 pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-4xl">
           <Button 
             variant="ghost" 
             className="mb-6" 
-            onClick={() => onNavigate('landing')}
+            onClick={() => navigate('/')}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
@@ -196,7 +192,7 @@ export function PolicyPage({ type, user, onNavigate, onLogout }: PolicyPageProps
         </div>
       </div>
 
-      <Footer onNavigate={onNavigate} />
+      <Footer />
     </div>
   );
 }

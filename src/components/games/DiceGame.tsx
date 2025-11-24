@@ -5,19 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { User } from '@/App';
+import { useUser } from '@/contexts/UserContext';
 import { generateGameResult } from '@/utils/provablyFair';
 import { addGameHistory, formatCurrency, getGameSettings } from '@/utils/storageMongo';
 import { soundManager } from '@/utils/audio';
 import { toast } from 'sonner';
 import { BalanceSelector } from '@/components/BalanceSelector';
 
-interface DiceGameProps {
-  user: User;
-  updateUser: (updates: Partial<User>) => void;
-}
-
-export function DiceGame({ user, updateUser }: DiceGameProps) {
+export function DiceGame() {
+  const { user, updateUser } = useUser();
+  
+  if (!user) return null;
   const [betAmount, setBetAmount] = useState(10);
   const [prediction, setPrediction] = useState(50);
   const [rollType, setRollType] = useState<'over' | 'under'>('over');

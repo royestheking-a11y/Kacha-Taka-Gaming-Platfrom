@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, Wallet, User as UserIcon, LogOut, Settings, ShieldCheck, Gamepad2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription, SheetHeader } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User } from '@/App';
+import { useUser } from '@/contexts/UserContext';
 import { formatCurrency } from '@/utils/storageMongo';
 
-interface NavbarProps {
-  user: User | null;
-  onLogout: () => void;
-  onNavigate: (page: string) => void;
-  onLogin?: (user: User) => void;
-}
-
-export function Navbar({ user, onLogout, onNavigate, onLogin }: NavbarProps) {
+export function Navbar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, logout } = useUser();
   const [scrolled, setScrolled] = useState(false);
   
   // Handle scroll effect
@@ -40,7 +37,7 @@ export function Navbar({ user, onLogout, onNavigate, onLogin }: NavbarProps) {
           {/* Logo */}
           <div 
             className="flex items-center gap-2 cursor-pointer" 
-            onClick={() => onNavigate('landing')}
+            onClick={() => navigate('/')}
           >
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
               <span className="text-white font-bold text-xl">K</span>
@@ -52,9 +49,9 @@ export function Navbar({ user, onLogout, onNavigate, onLogin }: NavbarProps) {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
-            <NavLink label="Home" onClick={() => onNavigate('landing')} active />
-            <NavLink label="Games" onClick={() => onNavigate(user ? 'dashboard' : 'landing')} />
-            <NavLink label="Fairness" onClick={() => onNavigate('fairness')} />
+            <NavLink label="Home" onClick={() => navigate('/')} active={location.pathname === '/'} />
+            <NavLink label="Games" onClick={() => navigate(user ? '/dashboard' : '/')} active={location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/crash') || location.pathname.startsWith('/mines') || location.pathname.startsWith('/slots') || location.pathname.startsWith('/dice')} />
+            <NavLink label="Fairness" onClick={() => navigate('/fairness')} active={location.pathname === '/fairness'} />
           </nav>
 
           {/* User / Auth */}
@@ -89,26 +86,26 @@ export function Navbar({ user, onLogout, onNavigate, onLogin }: NavbarProps) {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onNavigate('profile')}>
+                    <DropdownMenuItem onClick={() => navigate('/profile')}>
                       <UserIcon className="mr-2 h-4 w-4" />
                       <span>Profile</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onNavigate('wallet')}>
+                    <DropdownMenuItem onClick={() => navigate('/wallet')}>
                       <Wallet className="mr-2 h-4 w-4" />
                       <span>Wallet</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onNavigate('dashboard')}>
+                    <DropdownMenuItem onClick={() => navigate('/dashboard')}>
                        <Gamepad2 className="mr-2 h-4 w-4" />
                        <span>Dashboard</span>
                     </DropdownMenuItem>
                     {user.isAdmin && (
-                      <DropdownMenuItem onClick={() => onNavigate('admin')}>
+                      <DropdownMenuItem onClick={() => navigate('/admin')}>
                         <ShieldCheck className="mr-2 h-4 w-4" />
                         <span>Admin Panel</span>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={onLogout} className="text-red-600 focus:text-red-600">
+                    <DropdownMenuItem onClick={() => { logout(); navigate('/'); }} className="text-red-600 focus:text-red-600">
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Log out</span>
                     </DropdownMenuItem>
@@ -117,10 +114,10 @@ export function Navbar({ user, onLogout, onNavigate, onLogin }: NavbarProps) {
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" onClick={() => onNavigate('login')} className="hidden sm:flex">
+                <Button variant="ghost" onClick={() => navigate('/login')} className="hidden sm:flex">
                   Log in
                 </Button>
-                <Button onClick={() => onNavigate('register')} className="shadow-lg shadow-primary/20">
+                <Button onClick={() => navigate('/register')} className="shadow-lg shadow-primary/20">
                   Sign up
                 </Button>
               </div>
@@ -140,29 +137,29 @@ export function Navbar({ user, onLogout, onNavigate, onLogin }: NavbarProps) {
                     <SheetDescription>Access all pages and features</SheetDescription>
                   </SheetHeader>
                   <div className="flex flex-col gap-6 mt-10">
-                    <Button variant="ghost" onClick={() => onNavigate('landing')} className="justify-start text-lg">
+                    <Button variant="ghost" onClick={() => navigate('/')} className="justify-start text-lg">
                       Home
                     </Button>
-                    <Button variant="ghost" onClick={() => onNavigate('landing')} className="justify-start text-lg">
+                    <Button variant="ghost" onClick={() => navigate(user ? '/dashboard' : '/')} className="justify-start text-lg">
                       Games
                     </Button>
                     {user && (
                        <>
-                        <Button variant="ghost" onClick={() => onNavigate('wallet')} className="justify-start text-lg">
+                        <Button variant="ghost" onClick={() => navigate('/wallet')} className="justify-start text-lg">
                           Wallet
                         </Button>
-                        <Button variant="ghost" onClick={() => onNavigate('profile')} className="justify-start text-lg">
+                        <Button variant="ghost" onClick={() => navigate('/profile')} className="justify-start text-lg">
                           Profile
                         </Button>
                        </>
                     )}
                     <div className="mt-auto">
                        {user ? (
-                          <Button variant="destructive" className="w-full" onClick={onLogout}>Log Out</Button>
+                          <Button variant="destructive" className="w-full" onClick={() => { logout(); navigate('/'); }}>Log Out</Button>
                        ) : (
                           <div className="grid gap-2">
-                            <Button variant="outline" className="w-full" onClick={() => onNavigate('login')}>Log In</Button>
-                            <Button className="w-full" onClick={() => onNavigate('register')}>Sign Up</Button>
+                            <Button variant="outline" className="w-full" onClick={() => navigate('/login')}>Log In</Button>
+                            <Button className="w-full" onClick={() => navigate('/register')}>Sign Up</Button>
                           </div>
                        )}
                     </div>

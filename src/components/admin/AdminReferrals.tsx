@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { getAllUsers, getReferrals } from '@/utils/storageMongo';
-import { User } from '@/App';
+import { User } from '@/contexts/UserContext';
 import { Users, TrendingUp, DollarSign, Award } from 'lucide-react';
 
 export function AdminReferrals() {

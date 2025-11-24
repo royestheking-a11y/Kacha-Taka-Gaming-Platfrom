@@ -5,16 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User } from '@/App';
+import { useUser } from '@/contexts/UserContext';
 import { getReferrals } from '@/utils/storageMongo';
 import { toast } from 'sonner';
 
-interface ProfileProps {
-  user: User;
-  updateUser: (updates: Partial<User>) => void;
-}
-
-export function Profile({ user, updateUser }: ProfileProps) {
+export function Profile() {
+  const { user, updateUser } = useUser();
+  
+  if (!user) return null;
+  
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [phone, setPhone] = useState(user.phone);

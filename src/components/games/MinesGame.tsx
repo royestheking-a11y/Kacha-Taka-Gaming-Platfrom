@@ -5,21 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User } from '@/App';
+import { useUser } from '@/contexts/UserContext';
 import { generateGameResult } from '@/utils/provablyFair';
 import { addGameHistory, formatCurrency, getGameSettings } from '@/utils/storageMongo';
 import { soundManager } from '@/utils/audio';
 import { toast } from 'sonner';
 import { BalanceSelector } from '@/components/BalanceSelector';
 
-interface MinesGameProps {
-  user: User;
-  updateUser: (updates: Partial<User>) => void;
-}
-
 type TileState = 'hidden' | 'gem' | 'bomb' | 'revealed_safe';
 
-export function MinesGame({ user, updateUser }: MinesGameProps) {
+export function MinesGame() {
+  const { user, updateUser } = useUser();
+  
+  if (!user) return null;
   const [betAmount, setBetAmount] = useState(10);
   const [minesCount, setMinesCount] = useState(3);
   const [isPlaying, setIsPlaying] = useState(false);

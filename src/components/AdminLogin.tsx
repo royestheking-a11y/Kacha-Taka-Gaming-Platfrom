@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,15 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { initializeStorage } from '@/utils/storageMongo';
 import { authAPI } from '@/utils/api';
-import { User } from '@/App';
+import { useUser } from '@/contexts/UserContext';
 import { toast } from 'sonner';
 
-interface AdminLoginProps {
-  onLogin: (user: User) => void;
-  onBack: () => void;
-}
-
-export function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
+export function AdminLogin() {
+  const navigate = useNavigate();
+  const { login } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,8 +30,9 @@ export function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
       const response = await authAPI.login(email, password);
       
       if (response.user && response.user.isAdmin && response.token) {
-        onLogin(response.user, response.token);
+        login(response.user, response.token);
         toast.success('Admin login successful');
+        navigate('/admin');
       } else {
         setError('Invalid admin credentials');
         toast.error('Access denied');
@@ -112,7 +111,7 @@ export function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
                 type="button" 
                 variant="outline" 
                 className="w-full" 
-                onClick={onBack}
+                onClick={() => navigate('/')}
               >
                 Back to Home
               </Button>

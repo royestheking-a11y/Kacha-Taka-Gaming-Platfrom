@@ -3,9 +3,11 @@ import { ShieldCheck, Lock, Database, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export function Fairness({ onNavigate }: { onNavigate: (page: string) => void }) {
+export function Fairness() {
+  const navigate = useNavigate();
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
       <div className="text-center mb-12">
@@ -98,7 +100,7 @@ export function Fairness({ onNavigate }: { onNavigate: (page: string) => void })
       </Card>
       
       <div className="text-center">
-        <Button variant="outline" onClick={() => onNavigate('landing')}>Back to Home</Button>
+        <Button variant="outline" onClick={() => navigate('/')}>Back to Home</Button>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Wallet, Gamepad2, AlertTriangle, ArrowDownLeft, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getAllUsers, getPaymentRequests, formatCurrency } from '@/utils/storageMongo';
-import { User } from '@/App';
+import { User } from '@/contexts/UserContext';
 
 export function AdminOverview() {
   const [users, setUsers] = useState<User[]>([]);

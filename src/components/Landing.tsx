@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowRight, ShieldCheck, Zap, Trophy, TrendingUp, Rocket, Dna, Gamepad2, Gift, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,15 +8,11 @@ import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { AuthDialog } from './AuthDialog';
 import { TrustSection } from './TrustSection';
-import { User } from '@/App';
+import { useUser } from '@/contexts/UserContext';
 
-interface LandingProps {
-  onNavigate: (page: string) => void;
-  user?: User | null;
-  onLogin?: (user: User) => void;
-}
-
-export function Landing({ onNavigate, user = null, onLogin }: LandingProps) {
+export function Landing() {
+  const navigate = useNavigate();
+  const { user } = useUser();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
 
@@ -24,25 +21,14 @@ export function Landing({ onNavigate, user = null, onLogin }: LandingProps) {
     setAuthDialogOpen(true);
   };
 
-  const handleLogin = (loggedInUser: User) => {
-    setAuthDialogOpen(false);
-    if (onLogin) {
-      onLogin(loggedInUser);
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-background overflow-x-hidden">
-      <Navbar user={user} onLogout={() => {
-        localStorage.removeItem('kachaTaka_currentUser');
-        window.location.reload(); 
-      }} onNavigate={onNavigate} onLogin={onLogin} />
+      <Navbar />
       
       {/* Auth Dialog */}
       <AuthDialog 
         open={authDialogOpen}
         onOpenChange={setAuthDialogOpen}
-        onLogin={handleLogin}
         defaultTab={authTab}
       />
       
@@ -83,7 +69,7 @@ export function Landing({ onNavigate, user = null, onLogin }: LandingProps) {
             
             <div className="flex flex-wrap gap-4">
               {user ? (
-                <Button size="lg" onClick={() => onNavigate('dashboard')} className="text-lg h-14 px-8 shadow-xl shadow-primary/25">
+                <Button size="lg" onClick={() => navigate('/dashboard')} className="text-lg h-14 px-8 shadow-xl shadow-primary/25">
                   Go to Dashboard
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -166,7 +152,7 @@ export function Landing({ onNavigate, user = null, onLogin }: LandingProps) {
                 <p className="text-muted-foreground">Select your favorite game and start winning.</p>
               </div>
               {user && (
-                <Button variant="ghost" onClick={() => onNavigate('dashboard')} className="hidden md:flex group">
+                <Button variant="ghost" onClick={() => navigate('/dashboard')} className="hidden md:flex group">
                   View All Games <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               )}
@@ -177,28 +163,28 @@ export function Landing({ onNavigate, user = null, onLogin }: LandingProps) {
                  title="Crash" 
                  image="https://images.unsplash.com/photo-1718037324508-c2a0a889d6db?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyb2NrZXQlMjBzcGFjZSUyMGZsaWdodHxlbnwxfHx8fDE3NjM4ODM3NjF8MA&ixlib=rb-4.1.0&q=80&w=1080"
                  icon={<Rocket className="w-12 h-12 text-red-500" />}
-                 onClick={() => user ? onNavigate('crash') : handleOpenAuth('register')}
+                 onClick={() => user ? navigate('/crash') : handleOpenAuth('register')}
                  description="Ride the rocket to the moon!"
                />
                <GameCard 
                  title="Mines" 
                  image="https://images.unsplash.com/photo-1666556277774-ff9b3876bd72?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaW5lJTIwZ2VtcyUyMGRpYW1vbmRzfGVufDF8fHx8MTc2Mzg4Mzc2Mnww&ixlib=rb-4.1.0&q=80&w=1080"
                  icon={<TrendingUp className="w-12 h-12 text-emerald-500" />}
-                 onClick={() => user ? onNavigate('mines') : handleOpenAuth('register')}
+                 onClick={() => user ? navigate('/mines') : handleOpenAuth('register')}
                  description="Find gems, avoid bombs."
                />
                <GameCard 
                  title="Slots" 
                  image="https://images.unsplash.com/photo-1706129867447-b4f156c46641?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzbG90JTIwbWFjaGluZSUyMGNhc2lub3xlbnwxfHx8fDE3NjM3NjIwNDl8MA&ixlib=rb-4.1.0&q=80&w=1080"
                  icon={<Zap className="w-12 h-12 text-yellow-500" />}
-                 onClick={() => user ? onNavigate('slots') : handleOpenAuth('register')}
+                 onClick={() => user ? navigate('/slots') : handleOpenAuth('register')}
                  description="Spin to win the jackpot!"
                />
                <GameCard 
                  title="Dice" 
                  image="https://images.unsplash.com/photo-1703319952169-4a3ed572ba0f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkaWNlJTIwZ2FtZXxlbnwxfHx8fDE3NjM4MDkxOTl8MA&ixlib=rb-4.1.0&q=80&w=1080"
                  icon={<Dna className="w-12 h-12 text-blue-500" />}
-                 onClick={() => user ? onNavigate('dice') : handleOpenAuth('register')}
+                 onClick={() => user ? navigate('/dice') : handleOpenAuth('register')}
                  description="Predict the roll outcome."
                />
             </div>
@@ -369,7 +355,7 @@ export function Landing({ onNavigate, user = null, onLogin }: LandingProps) {
       {/* Trust Section - Shows user activity and stats */}
       <TrustSection />
 
-      <Footer onNavigate={onNavigate} />
+      <Footer />
     </div>
   );
 }

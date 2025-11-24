@@ -7,22 +7,24 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useNavigate } from 'react-router-dom';
 import { initializeStorage } from '@/utils/storageMongo';
 import { authAPI } from '@/utils/api';
-import { User } from '@/App';
+import { useUser } from '@/contexts/UserContext';
+import { User } from '@/contexts/UserContext';
 import { OTPVerification } from './OTPVerification';
 import { sendOTPEmail } from '@/utils/emailService';
 import { toast } from 'sonner';
 
 interface AuthProps {
-  onLogin: (user: User) => void;
-  onNavigate: (page: string) => void;
   defaultTab?: 'login' | 'register';
 }
 
 type AuthStep = 'login' | 'register' | 'otp-verification' | 'forgot-password' | 'reset-password';
 
-export function Auth({ onLogin, onNavigate, defaultTab = 'login' }: AuthProps) {
+export function Auth({ defaultTab = 'login' }: AuthProps) {
+  const navigate = useNavigate();
+  const { login } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -62,8 +64,14 @@ export function Auth({ onLogin, onNavigate, defaultTab = 'login' }: AuthProps) {
     try {
       const response = await authAPI.login(loginEmail, loginPassword);
       if (response.user && response.token) {
-        onLogin(response.user, response.token);
+        login(response.user, response.token);
         toast.success('Login successful!');
+        // Navigate based on user type
+        if (response.user.isAdmin) {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         setError('Login failed');
       }
@@ -399,7 +407,7 @@ export function Auth({ onLogin, onNavigate, defaultTab = 'login' }: AuthProps) {
         <Button 
           variant="ghost" 
           className="mb-8" 
-          onClick={() => onNavigate('landing')}
+          onClick={() => navigate('/')}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Home

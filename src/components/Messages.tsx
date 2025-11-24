@@ -1,13 +1,12 @@
 import React from 'react';
 import { MessageSquare, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { User } from '@/App';
+import { useUser } from '@/contexts/UserContext';
 
-interface MessagesProps {
-  user: User;
-}
-
-export function Messages({ user }: MessagesProps) {
+export function Messages() {
+  const { user } = useUser();
+  
+  if (!user) return null;
   return (
     <div className="container mx-auto px-4 py-8">
       <Card className="border-none shadow-xl max-w-2xl mx-auto">

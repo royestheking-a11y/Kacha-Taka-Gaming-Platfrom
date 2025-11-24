@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getAllUsers, updateUserBalance, getReferrals, getGameHistory, getTransactions, getGlobalSettings, pointsToBDT } from '@/utils/storageMongo';
-import { User } from '@/App';
+import { User } from '@/contexts/UserContext';
 import { toast } from 'sonner';
 
 export function AdminUsers() {

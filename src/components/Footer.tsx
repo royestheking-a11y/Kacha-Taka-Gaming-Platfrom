@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Github, Twitter, Facebook, Instagram } from 'lucide-react';
 
-export function Footer({ onNavigate }: { onNavigate: (page: string) => void }) {
+export function Footer() {
+  const navigate = useNavigate();
   return (
     <footer className="bg-background border-t py-12 mt-auto">
       <div className="container mx-auto px-4">
@@ -22,21 +24,21 @@ export function Footer({ onNavigate }: { onNavigate: (page: string) => void }) {
           <div>
             <h3 className="font-semibold mb-4">Platform</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><button onClick={() => onNavigate('landing')} className="hover:text-primary transition-colors">Games</button></li>
-              <li><button onClick={() => onNavigate('profile')} className="hover:text-primary transition-colors">VIP Club</button></li>
-              <li><button onClick={() => onNavigate('wallet')} className="hover:text-primary transition-colors">Promotions</button></li>
-              <li><button onClick={() => onNavigate('profile')} className="hover:text-primary transition-colors">Referral System</button></li>
+              <li><button onClick={() => navigate('/')} className="hover:text-primary transition-colors">Games</button></li>
+              <li><button onClick={() => navigate('/profile')} className="hover:text-primary transition-colors">VIP Club</button></li>
+              <li><button onClick={() => navigate('/wallet')} className="hover:text-primary transition-colors">Promotions</button></li>
+              <li><button onClick={() => navigate('/profile')} className="hover:text-primary transition-colors">Referral System</button></li>
             </ul>
           </div>
 
           <div>
             <h3 className="font-semibold mb-4">Support</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><button onClick={() => onNavigate('messages')} className="hover:text-primary transition-colors">Help Center</button></li>
-              <li><button onClick={() => onNavigate('terms')} className="hover:text-primary transition-colors">Terms of Service</button></li>
-              <li><button onClick={() => onNavigate('privacy')} className="hover:text-primary transition-colors">Privacy Policy</button></li>
-              <li><button onClick={() => onNavigate('responsible')} className="hover:text-primary transition-colors">Responsible Gaming</button></li>
-              <li><button onClick={() => onNavigate('fairness')} className="hover:text-primary transition-colors">Fairness</button></li>
+              <li><button onClick={() => navigate('/messages')} className="hover:text-primary transition-colors">Help Center</button></li>
+              <li><button onClick={() => navigate('/terms')} className="hover:text-primary transition-colors">Terms of Service</button></li>
+              <li><button onClick={() => navigate('/privacy')} className="hover:text-primary transition-colors">Privacy Policy</button></li>
+              <li><button onClick={() => navigate('/responsible')} className="hover:text-primary transition-colors">Responsible Gaming</button></li>
+              <li><button onClick={() => navigate('/fairness')} className="hover:text-primary transition-colors">Fairness</button></li>
             </ul>
           </div>
 
@@ -51,7 +53,7 @@ export function Footer({ onNavigate }: { onNavigate: (page: string) => void }) {
             <div className="mt-6">
               <h3 className="font-semibold mb-2 text-sm">Administration</h3>
               <button 
-                onClick={() => onNavigate('admin-login')} 
+                onClick={() => navigate('/admin-login')} 
                 className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
               >
                 Admin Panel

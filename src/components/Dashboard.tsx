@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Play, TrendingUp, Trophy, Target, ArrowRight, Rocket, Zap, Dna, Gamepad2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { User } from '@/App';
+import { useUser } from '@/contexts/UserContext';
 import { getGameHistory, formatCurrency } from '@/utils/storageMongo';
 import { DailySpin } from './DailySpin';
 
-interface DashboardProps {
-  user: User;
-  onNavigate: (page: string) => void;
-  updateUser?: (updates: Partial<User>) => void;
-}
-
-export function Dashboard({ user, onNavigate, updateUser }: DashboardProps) {
+export function Dashboard() {
+  const navigate = useNavigate();
+  const { user, updateUser } = useUser();
+  
+  if (!user) return null;
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +43,7 @@ export function Dashboard({ user, onNavigate, updateUser }: DashboardProps) {
   const profit = totalWon - totalWagered;
 
   // Safe updateUser function
-  const handleUpdateUser = (updates: Partial<User>) => {
+  const handleUpdateUser = (updates: any) => {
     if (updateUser) {
       updateUser(updates);
     }
@@ -60,10 +59,10 @@ export function Dashboard({ user, onNavigate, updateUser }: DashboardProps) {
                Ready to multiply your balance? Check out the latest games and promotions.
             </p>
             <div className="flex gap-4">
-               <Button variant="secondary" size="lg" onClick={() => onNavigate('landing')}>
+               <Button variant="secondary" size="lg" onClick={() => navigate('/')}>
                   Play Now <Play className="ml-2 w-4 h-4" />
                </Button>
-               <Button variant="outline" size="lg" className="bg-transparent border-white text-white hover:bg-white hover:text-primary" onClick={() => onNavigate('wallet')}>
+               <Button variant="outline" size="lg" className="bg-transparent border-white text-white hover:bg-white hover:text-primary" onClick={() => navigate('/wallet')}>
                   Deposit Funds
                </Button>
             </div>
@@ -112,25 +111,25 @@ export function Dashboard({ user, onNavigate, updateUser }: DashboardProps) {
             title="Crash"
             icon={<Rocket className="w-8 h-8" />}
             color="from-red-500 to-orange-500"
-            onClick={() => onNavigate('crash')}
+            onClick={() => navigate('/crash')}
           />
           <GameQuickCard 
             title="Mines"
             icon={<Gamepad2 className="w-8 h-8" />}
             color="from-emerald-500 to-teal-500"
-            onClick={() => onNavigate('mines')}
+            onClick={() => navigate('/mines')}
           />
           <GameQuickCard 
             title="Slots"
             icon={<Zap className="w-8 h-8" />}
             color="from-yellow-500 to-amber-500"
-            onClick={() => onNavigate('slots')}
+            onClick={() => navigate('/slots')}
           />
           <GameQuickCard 
             title="Dice"
             icon={<Dna className="w-8 h-8" />}
             color="from-blue-500 to-indigo-500"
-            onClick={() => onNavigate('dice')}
+            onClick={() => navigate('/dice')}
           />
         </div>
       </div>

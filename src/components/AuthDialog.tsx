@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useNavigate } from 'react-router-dom';
 import { initializeStorage } from '@/utils/storageMongo';
 import { authAPI } from '@/utils/api';
-import { User } from '@/App';
+import { useUser } from '@/contexts/UserContext';
 import { toast } from 'sonner';
 import { OTPVerification } from './OTPVerification';
 import { generateOTP, storeOTP, cleanExpiredOTPs } from '@/utils/otp';
@@ -17,13 +18,14 @@ import { sendOTPEmail } from '@/utils/emailService';
 interface AuthDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onLogin: (user: User) => void;
   defaultTab?: 'login' | 'register';
 }
 
 type DialogStep = 'login' | 'register' | 'otp-verification';
 
-export function AuthDialog({ open, onOpenChange, onLogin, defaultTab = 'login' }: AuthDialogProps) {
+export function AuthDialog({ open, onOpenChange, defaultTab = 'login' }: AuthDialogProps) {
+  const navigate = useNavigate();
+  const { login } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -68,9 +70,15 @@ export function AuthDialog({ open, onOpenChange, onLogin, defaultTab = 'login' }
     try {
       const response = await authAPI.login(loginEmail, loginPassword);
       if (response.user && response.token) {
-        onLogin(response.user, response.token);
+        login(response.user, response.token);
         toast.success('Login successful!');
         onOpenChange(false);
+        // Navigate based on user type
+        if (response.user.isAdmin) {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         setError('Login failed');
         toast.error('Login failed');

@@ -8,16 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { User } from '@/App';
+import { useUser } from '@/contexts/UserContext';
 import { formatCurrency, addPaymentRequest, getTransactions, getGlobalSettings, getPaymentRequests, pointsToBDT } from '@/utils/storageMongo';
 import { toast } from 'sonner';
 
-interface WalletProps {
-  user: User;
-  updateUser: (updates: Partial<User>) => void;
-}
-
-export function Wallet({ user, updateUser }: WalletProps) {
+export function Wallet() {
+  const { user, updateUser } = useUser();
+  
+  if (!user) return null;
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('bkash');
   const [paymentNumber, setPaymentNumber] = useState('');

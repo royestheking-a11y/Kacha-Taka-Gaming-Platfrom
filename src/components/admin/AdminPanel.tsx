@@ -20,13 +20,12 @@ import { AdminSettings } from './AdminSettings';
 import { AdminReferrals } from './AdminReferrals';
 import { EnhancedAdminOverview } from './EnhancedAdminOverview';
 
-interface AdminPanelProps {
-  onNavigate: (page: string) => void;
-}
+import { useNavigate } from 'react-router-dom';
 
 type AdminView = 'overview' | 'users' | 'games' | 'payments' | 'settings' | 'referrals';
 
-export function AdminPanel({ onNavigate }: AdminPanelProps) {
+export function AdminPanel() {
+  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState<AdminView>('overview');
 
   const views = {
@@ -72,7 +71,7 @@ export function AdminPanel({ onNavigate }: AdminPanelProps) {
             ))}
          </nav>
          <div className="p-4 mt-auto border-t">
-            <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => onNavigate('landing')}>
+            <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => navigate('/')}>
                <LogOut className="w-4 h-4 mr-2" /> Exit Admin
             </Button>
          </div>

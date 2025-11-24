@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Landing } from './components/Landing';
-import { Navbar } from './components/Navbar';
 import { Auth } from './components/Auth';
 import { Dashboard } from './components/Dashboard';
 import { CrashGame } from './components/games/CrashGame';
@@ -15,230 +15,191 @@ import { AdminLogin } from './components/AdminLogin';
 import { PolicyPage } from './components/PolicyPage';
 import { Footer } from './components/Footer';
 import { Fairness } from './components/Fairness';
-import { initializeStorage } from './utils/storageMongo';
-import { authAPI, setToken } from './utils/api';
+import { Navbar } from './components/Navbar';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { UserProvider, useUser } from './contexts/UserContext';
 import { Toaster } from './components/ui/sonner';
 
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  demoPoints: number;
-  realBalance: number;
-  isAdmin: boolean;
-  createdAt: string;
-  kycStatus: 'pending' | 'verified' | 'rejected';
-  referralCode?: string;
-  referredBy?: string;
-  referralEarnings?: number;
-  lastDailySpin?: string;
-};
+// Export User type for backward compatibility
+export type { User } from './contexts/UserContext';
 
-export type Page = 'landing' | 'auth' | 'login' | 'register' | 'dashboard' | 'crash' | 'mines' | 'slots' | 'dice' | 'profile' | 'wallet' | 'messages' | 'admin' | 'admin-login' | 'fairness' | 'terms' | 'privacy' | 'responsible';
+function ScrollToTop() {
+  const { pathname } = useLocation();
 
-export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('landing');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    // Initialize storage on app load
-    initializeStorage();
-    
-    // Check for existing session via API
-    const checkSession = async () => {
-      try {
-        const token = localStorage.getItem('kachaTaka_token');
-        if (token) {
-          const response = await authAPI.getCurrentUser();
-          if (response.user) {
-            setCurrentUser(response.user);
-            // Route to appropriate page based on user type
-            if (response.user.isAdmin) {
-              setCurrentPage('admin');
-            } else {
-              setCurrentPage('dashboard');
-            }
-          }
-        }
-      } catch (error) {
-        // Token invalid or expired, clear it
-        localStorage.removeItem('kachaTaka_token');
-        localStorage.removeItem('kachaTaka_currentUser');
-      }
-    };
-    
-    checkSession();
-  }, []);
-
-  // Scroll to top when page changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPage]);
+  }, [pathname]);
 
-  const handleLogin = (user: User, token?: string) => {
-    setCurrentUser(user);
-    if (token) {
-      // Use API's setToken to ensure consistency
-      setToken(token);
-      console.log('[App] Token saved after login');
-    } else {
-      console.warn('[App] No token provided during login');
-    }
-    localStorage.setItem('kachaTaka_currentUser', JSON.stringify(user));
-    // Route to appropriate page based on user type
-    if (user.isAdmin) {
-      setCurrentPage('admin');
-    } else {
-      setCurrentPage('dashboard');
-    }
-  };
+  return null;
+}
 
-  const handleLogout = () => {
-    const wasAdmin = currentUser?.isAdmin || false;
-    
-    // Clear user state and token
-    setCurrentUser(null);
-    localStorage.removeItem('kachaTaka_currentUser');
-    localStorage.removeItem('kachaTaka_token');
-    authAPI.logout();
-    
-    // Navigate to landing page
-    setCurrentPage('landing');
-    
-    // For admin users, we need to ensure clean state transition
-    // Force reload only if switching from admin to ensure clean slate
-    if (wasAdmin) {
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
-    }
-  };
-
-  const updateUser = async (updates: Partial<User>) => {
-    if (!currentUser) return;
-    
-    // Update local state immediately for UI responsiveness
-    const updatedUser = { ...currentUser, ...updates };
-    setCurrentUser(updatedUser);
-    localStorage.setItem('kachaTaka_currentUser', JSON.stringify(updatedUser));
-    
-    // Save to MongoDB via API
-    try {
-      const { usersAPI } = await import('./utils/api');
-      await usersAPI.update(currentUser.id, updates);
-      
-      // Refresh user data from server to ensure consistency
-      const response = await authAPI.getCurrentUser();
-      if (response.user) {
-        setCurrentUser(response.user);
-        localStorage.setItem('kachaTaka_currentUser', JSON.stringify(response.user));
-      }
-    } catch (error) {
-      console.error('Failed to update user in MongoDB:', error);
-      // Continue with local update even if API fails
-    }
-  };
-
-  const renderPage = () => {
-    if (currentPage === 'landing') {
-      return <Landing onNavigate={setCurrentPage} user={currentUser} onLogin={handleLogin} />;
-    }
-
-    // Admin Login Page (separate from regular auth)
-    if (currentPage === 'admin-login') {
-      return <AdminLogin onLogin={handleLogin} onBack={() => setCurrentPage('landing')} />;
-    }
-
-    // Policy Pages
-    if (currentPage === 'terms' || currentPage === 'privacy' || currentPage === 'responsible') {
-      return (
-        <PolicyPage 
-          type={currentPage} 
-          user={currentUser}
-          onNavigate={setCurrentPage}
-          onLogout={handleLogout}
-        />
-      );
-    }
-
-    if (currentPage === 'fairness') {
-       return (
-         <>
-            <Navbar user={currentUser} onNavigate={setCurrentPage} onLogout={handleLogout} />
-            <div className="pt-16">
-              <Fairness onNavigate={setCurrentPage} />
-            </div>
-            <Footer onNavigate={setCurrentPage} />
-         </>
-       );
-    }
-
-    if (currentPage === 'auth') {
-      return <Auth onLogin={handleLogin} onNavigate={setCurrentPage} />;
-    }
-
-    if (currentPage === 'login') {
-      return <Auth onLogin={handleLogin} onNavigate={setCurrentPage} defaultTab="login" />;
-    }
-
-    if (currentPage === 'register') {
-      return <Auth onLogin={handleLogin} onNavigate={setCurrentPage} defaultTab="register" />;
-    }
-
-    // Check if user is authenticated for protected pages
-    const protectedPages = ['dashboard', 'crash', 'mines', 'slots', 'dice', 'profile', 'wallet', 'messages', 'admin'];
-    if (protectedPages.includes(currentPage) && !currentUser) {
-      // Check if there's a token but user state is not set
-      const token = localStorage.getItem('kachaTaka_token');
-      if (token) {
-        // Try to restore user from localStorage
-        const savedUser = localStorage.getItem('kachaTaka_currentUser');
-        if (savedUser) {
-          try {
-            const user = JSON.parse(savedUser);
-            setCurrentUser(user);
-            return null; // Will re-render with user
-          } catch (e) {
-            console.error('Error parsing saved user:', e);
-          }
-        }
-      }
-      return <Landing onNavigate={setCurrentPage} user={currentUser} />;
-    }
-    
-    if (!currentUser && protectedPages.includes(currentPage)) {
-      return <Landing onNavigate={setCurrentPage} user={currentUser} />;
-    }
-
-    return (
-      <>
-        <Navbar 
-          user={currentUser} 
-          onNavigate={setCurrentPage}
-          onLogout={handleLogout}
-          onLogin={handleLogin}
-        />
-        <div className="pt-16 min-h-[calc(100vh-300px)]">
-          {currentPage === 'dashboard' && <Dashboard user={currentUser} onNavigate={setCurrentPage} updateUser={updateUser} />}
-          {currentPage === 'crash' && <CrashGame user={currentUser} updateUser={updateUser} />}
-          {currentPage === 'mines' && <MinesGame user={currentUser} updateUser={updateUser} />}
-          {currentPage === 'slots' && <SlotsGame user={currentUser} updateUser={updateUser} />}
-          {currentPage === 'dice' && <DiceGame user={currentUser} updateUser={updateUser} />}
-          {currentPage === 'profile' && <Profile user={currentUser} updateUser={updateUser} />}
-          {currentPage === 'wallet' && <Wallet user={currentUser} updateUser={updateUser} />}
-          {currentPage === 'messages' && <Messages user={currentUser} />}
-          {currentPage === 'admin' && currentUser.isAdmin && <AdminPanel onNavigate={setCurrentPage} />}
-        </div>
-        <Footer onNavigate={setCurrentPage} />
-      </>
-    );
-  };
-
+function AppRoutes() {
   return (
-    <div className="min-h-screen bg-neutral-50">
-      {renderPage()}
-      <Toaster />
-    </div>
+    <>
+      <ScrollToTop />
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/fairness" element={
+          <>
+            <Navbar />
+            <div className="pt-16">
+              <Fairness />
+            </div>
+            <Footer />
+          </>
+        } />
+        <Route path="/terms" element={
+          <>
+            <Navbar />
+            <div className="pt-16">
+              <PolicyPage type="terms" />
+            </div>
+            <Footer />
+          </>
+        } />
+        <Route path="/privacy" element={
+          <>
+            <Navbar />
+            <div className="pt-16">
+              <PolicyPage type="privacy" />
+            </div>
+            <Footer />
+          </>
+        } />
+        <Route path="/responsible" element={
+          <>
+            <Navbar />
+            <div className="pt-16">
+              <PolicyPage type="responsible" />
+            </div>
+            <Footer />
+          </>
+        } />
+
+        {/* Auth Routes */}
+        <Route path="/login" element={<Auth defaultTab="login" />} />
+        <Route path="/register" element={<Auth defaultTab="register" />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
+
+        {/* Protected Game Routes */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <>
+              <Navbar />
+              <div className="pt-16 min-h-[calc(100vh-300px)]">
+                <Dashboard />
+              </div>
+              <Footer />
+            </>
+          </ProtectedRoute>
+        } />
+        <Route path="/crash" element={
+          <ProtectedRoute>
+            <>
+              <Navbar />
+              <div className="pt-16 min-h-[calc(100vh-300px)]">
+                <CrashGame />
+              </div>
+              <Footer />
+            </>
+          </ProtectedRoute>
+        } />
+        <Route path="/mines" element={
+          <ProtectedRoute>
+            <>
+              <Navbar />
+              <div className="pt-16 min-h-[calc(100vh-300px)]">
+                <MinesGame />
+              </div>
+              <Footer />
+            </>
+          </ProtectedRoute>
+        } />
+        <Route path="/slots" element={
+          <ProtectedRoute>
+            <>
+              <Navbar />
+              <div className="pt-16 min-h-[calc(100vh-300px)]">
+                <SlotsGame />
+              </div>
+              <Footer />
+            </>
+          </ProtectedRoute>
+        } />
+        <Route path="/dice" element={
+          <ProtectedRoute>
+            <>
+              <Navbar />
+              <div className="pt-16 min-h-[calc(100vh-300px)]">
+                <DiceGame />
+              </div>
+              <Footer />
+            </>
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <>
+              <Navbar />
+              <div className="pt-16 min-h-[calc(100vh-300px)]">
+                <Profile />
+              </div>
+              <Footer />
+            </>
+          </ProtectedRoute>
+        } />
+        <Route path="/wallet" element={
+          <ProtectedRoute>
+            <>
+              <Navbar />
+              <div className="pt-16 min-h-[calc(100vh-300px)]">
+                <Wallet />
+              </div>
+              <Footer />
+            </>
+          </ProtectedRoute>
+        } />
+        <Route path="/messages" element={
+          <ProtectedRoute>
+            <>
+              <Navbar />
+              <div className="pt-16 min-h-[calc(100vh-300px)]">
+                <Messages />
+              </div>
+              <Footer />
+            </>
+          </ProtectedRoute>
+        } />
+
+        {/* Admin Routes */}
+        <Route path="/admin" element={
+          <ProtectedRoute requireAdmin>
+            <>
+              <Navbar />
+              <div className="pt-16 min-h-[calc(100vh-300px)]">
+                <AdminPanel />
+              </div>
+              <Footer />
+            </>
+          </ProtectedRoute>
+        } />
+
+        {/* Catch all - redirect to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <UserProvider>
+      <div className="min-h-screen bg-neutral-50">
+        <AppRoutes />
+        <Toaster />
+      </div>
+    </UserProvider>
   );
 }
