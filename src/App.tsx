@@ -16,7 +16,7 @@ import { PolicyPage } from './components/PolicyPage';
 import { Footer } from './components/Footer';
 import { Fairness } from './components/Fairness';
 import { initializeStorage } from './utils/storageMongo';
-import { authAPI } from './utils/api';
+import { authAPI, setToken } from './utils/api';
 import { Toaster } from './components/ui/sonner';
 
 export type User = {
@@ -79,7 +79,11 @@ export default function App() {
   const handleLogin = (user: User, token?: string) => {
     setCurrentUser(user);
     if (token) {
-      localStorage.setItem('kachaTaka_token', token);
+      // Use API's setToken to ensure consistency
+      setToken(token);
+      console.log('[App] Token saved after login');
+    } else {
+      console.warn('[App] No token provided during login');
     }
     localStorage.setItem('kachaTaka_currentUser', JSON.stringify(user));
     // Route to appropriate page based on user type
