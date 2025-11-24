@@ -51,21 +51,26 @@ export function DailySpin({ user, updateUser }: DailySpinProps) {
       return;
     }
 
+    // Universal 24-hour rule: Applies to ALL users (regular users, admin users, and new registrations)
+    // New users (without lastDailySpin) can spin once, then must wait 24 hours
     if (!user.lastDailySpin) {
       setCanSpin(true);
       setTimeRemaining('');
       return;
     }
 
+    // Check if 24 hours have passed since last spin
     const lastSpin = new Date(user.lastDailySpin).getTime();
     const now = Date.now();
-    const oneDay = 24 * 60 * 60 * 1000;
+    const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
     const diff = now - lastSpin;
 
     if (diff >= oneDay) {
+      // 24 hours have passed - user can spin again
       setCanSpin(true);
       setTimeRemaining('');
     } else {
+      // Still within 24-hour window - show countdown timer
       setCanSpin(false);
       const remaining = oneDay - diff;
       const hours = Math.floor(remaining / (1000 * 60 * 60));
