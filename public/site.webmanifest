@@ -1,6 +1,11 @@
 {
-  "name": "Kacha Taka Gaming Platform",
-  "short_name": "Kacha Taka",
+  "name": "Kacha Taka - Earn Money by Playing Games",
+  "short_name": "KachaTaka",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00FF8B",
+  "description": "Play Crash, Mines, Slots, and Dice to earn money instantly. Provably fair crypto & fiat gaming.",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -14,8 +19,5 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
-  "display": "standalone"
+  ]
 }

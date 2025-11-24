@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kachataka.vercel.app/sitemap.xml
+
