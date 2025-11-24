@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import mongoose from 'mongoose';
 import { connectDB } from '../lib/config/database.js';
 import User from '../lib/models/User.js';
 import OTP from '../lib/models/OTP.js';
@@ -173,6 +174,8 @@ app.post('/api/auth/register', async (req, res) => {
     console.log('[REGISTER] Request received:', { email: req.body && req.body.email, name: req.body && req.body.name });
     await connectDB();
     console.log('[REGISTER] Database connected');
+    console.log('[REGISTER] Database name:', mongoose.connection.db?.databaseName);
+    console.log('[REGISTER] Connection state:', mongoose.connection.readyState);
     
     const { name, email, phone, password, referralCode } = req.body;
 
@@ -422,14 +425,22 @@ app.get('/api/users', authenticate, isAdmin, async (req, res) => {
     console.log('[GET_USERS] Request received from admin:', req.user.email);
     await connectDB();
     console.log('[GET_USERS] Database connected');
+    console.log('[GET_USERS] Database name:', mongoose.connection.db?.databaseName);
+    console.log('[GET_USERS] Connection state:', mongoose.connection.readyState);
+    console.log('[GET_USERS] User collection name:', User.collection.name);
+    
+    const userCount = await User.countDocuments();
+    console.log('[GET_USERS] Total users in database:', userCount);
     
     const users = await User.find().select('-password').sort({ createdAt: -1 });
     console.log('[GET_USERS] Found users in MongoDB:', users.length);
     console.log('[GET_USERS] User IDs:', users.map(u => u._id.toString()));
+    console.log('[GET_USERS] User emails:', users.map(u => u.email));
     
     res.json(users);
   } catch (error) {
     console.error('[GET_USERS] Error:', error);
+    console.error('[GET_USERS] Error stack:', error.stack);
     res.status(500).json({ message: error.message });
   }
 });
