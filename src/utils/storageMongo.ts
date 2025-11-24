@@ -91,6 +91,13 @@ function transformUser(user: any): User {
 // User operations
 export async function getAllUsers(): Promise<User[]> {
   try {
+    // Check for token before making API call
+    const token = localStorage.getItem('kachaTaka_token');
+    if (!token) {
+      console.warn('[storageMongo] No token found, skipping getAllUsers');
+      return [];
+    }
+    
     console.log('[storageMongo] Fetching all users from API...');
     const users = await api.users.getAll();
     console.log('[storageMongo] Users fetched:', users.length);
@@ -137,18 +144,25 @@ export async function addGameHistory(entry: Omit<GameHistoryEntry, 'id' | 'times
 
 export async function getGameHistory(userId?: string, game?: string): Promise<GameHistoryEntry[]> {
   try {
+    // Check for token before making API call
+    const token = localStorage.getItem('kachaTaka_token');
+    if (!token) {
+      console.warn('[storageMongo] No token found, skipping getGameHistory');
+      return [];
+    }
+    
     const history = await api.games.getHistory(game, 1000);
     let filtered = history;
     
     if (userId) {
       filtered = filtered.filter((h: any) => 
-        (h.userId?._id || h.userId)?.toString() === userId
+        (h.userId && h.userId._id ? h.userId._id : h.userId)?.toString() === userId
       );
     }
     
     return filtered.map((h: any) => ({
       ...transformDoc(h),
-      userId: h.userId?._id?.toString() || h.userId?.toString() || h.userId,
+      userId: h.userId && h.userId._id ? h.userId._id.toString() : (h.userId ? h.userId.toString() : h.userId),
     }));
   } catch (error) {
     console.error('Error fetching game history:', error);
@@ -169,10 +183,17 @@ export async function addTransaction(transaction: Omit<Transaction, 'id' | 'time
 
 export async function getTransactions(userId?: string): Promise<Transaction[]> {
   try {
+    // Check for token before making API call
+    const token = localStorage.getItem('kachaTaka_token');
+    if (!token) {
+      console.warn('[storageMongo] No token found, skipping getTransactions');
+      return [];
+    }
+    
     const transactions = await api.transactions.getAll(userId);
     return transactions.map((t: any) => ({
       ...transformDoc(t),
-      userId: t.userId?._id?.toString() || t.userId?.toString() || t.userId,
+      userId: t.userId && t.userId._id ? t.userId._id.toString() : (t.userId ? t.userId.toString() : t.userId),
     }));
   } catch (error) {
     console.error('Error fetching transactions:', error);
@@ -236,11 +257,18 @@ export async function addPaymentRequest(request: Omit<PaymentRequest, 'id' | 'ti
 
 export async function getPaymentRequests(status?: string): Promise<PaymentRequest[]> {
   try {
+    // Check for token before making API call
+    const token = localStorage.getItem('kachaTaka_token');
+    if (!token) {
+      console.warn('[storageMongo] No token found, skipping getPaymentRequests');
+      return [];
+    }
+    
     const requests = await api.payments.getAll(status);
     return requests.map((r: any) => ({
       ...transformDoc(r),
-      userId: r.userId?._id?.toString() || r.userId?.toString() || r.userId,
-      userName: r.userName || r.userId?.name,
+      userId: r.userId && r.userId._id ? r.userId._id.toString() : (r.userId ? r.userId.toString() : r.userId),
+      userName: r.userName || (r.userId && r.userId.name ? r.userId.name : ''),
     }));
   } catch (error) {
     console.error('Error fetching payment requests:', error);
