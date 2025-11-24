@@ -314,7 +314,7 @@ export function CrashGame({ user, updateUser, setActiveTab }: CrashGameProps) {
     startTimeRef.current = Date.now();
   };
 
-  const crash = (finalM: number) => {
+  const crash = async (finalM: number) => {
     setGameState('crashed');
     soundManager.stopFlySound();
     soundManager.playExplosion();

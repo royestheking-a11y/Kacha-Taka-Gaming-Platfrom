@@ -147,7 +147,7 @@ export function MinesGame({ user, updateUser }: MinesGameProps) {
     }
   };
 
-  const endGame = (win: boolean, bombIndex?: number) => {
+  const endGame = async (win: boolean, bombIndex?: number) => {
     setIsGameOver(true);
     setIsPlaying(false);
     
