@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, useAnimation, Variants } from 'motion/react';
 import { Gift, Trophy, Coins, Zap, Star, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,16 +41,16 @@ export function DailySpin({ user, updateUser }: DailySpinProps) {
   const [winSegment, setWinSegment] = useState<Segment | null>(null);
   const [canSpin, setCanSpin] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const wheelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    checkCanSpin();
-    const interval = setInterval(checkCanSpin, 1000);
-    return () => clearInterval(interval);
-  }, [user.lastDailySpin]);
+  const checkCanSpin = useCallback(() => {
+    // Don't update canSpin if currently spinning or processing
+    if (isSpinning || isProcessing) {
+      return;
+    }
 
-  const checkCanSpin = () => {
     if (!user.lastDailySpin) {
       setCanSpin(true);
       setTimeRemaining('');
@@ -73,12 +73,21 @@ export function DailySpin({ user, updateUser }: DailySpinProps) {
       const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
       setTimeRemaining(`${hours}h ${minutes}m ${seconds}s`);
     }
-  };
+  }, [user.lastDailySpin, isSpinning, isProcessing]);
 
-  const spinWheel = () => {
-    if (isSpinning || !canSpin) return;
+  useEffect(() => {
+    checkCanSpin();
+    const interval = setInterval(checkCanSpin, 1000);
+    return () => clearInterval(interval);
+  }, [checkCanSpin]);
 
+  const spinWheel = async () => {
+    if (isSpinning || !canSpin || isProcessing) return;
+
+    // Immediately disable spinning to prevent multiple clicks
     setIsSpinning(true);
+    setCanSpin(false);
+    setIsProcessing(true);
 
     // Weighted random selection
     const totalWeight = SEGMENTS.reduce((sum, seg) => sum + seg.probability, 0);
@@ -140,32 +149,46 @@ export function DailySpin({ user, updateUser }: DailySpinProps) {
     setRotation(finalRotation);
     
     // Animation time is 4 seconds
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsSpinning(false);
       setWinSegment(SEGMENTS[selectedIndex]);
       setShowResult(true);
-      handleWin(SEGMENTS[selectedIndex]);
+      await handleWin(SEGMENTS[selectedIndex]);
+      // After win is processed, allow checkCanSpin to run again
+      setIsProcessing(false);
     }, 4000);
   };
 
   const handleWin = async (segment: Segment) => {
-    const now = new Date().toISOString();
-    let newDemo = user.demoPoints;
-    let newReal = user.realBalance;
+    try {
+      const now = new Date().toISOString();
+      let newDemo = user.demoPoints;
+      let newReal = user.realBalance;
 
-    if (segment.type === 'demo') {
-      newDemo += segment.amount;
-      toast.success(`You won ${segment.amount} Demo Points!`);
-    } else if (segment.type === 'real') {
-      newReal += segment.amount;
-      toast.success(`You won ৳${segment.amount} Real Balance!`);
+      if (segment.type === 'demo') {
+        newDemo += segment.amount;
+        toast.success(`You won ${segment.amount} Demo Points!`);
+      } else if (segment.type === 'real') {
+        newReal += segment.amount;
+        toast.success(`You won ৳${segment.amount} Real Balance!`);
+      }
+
+      // Wait for updateUser to complete and ensure lastDailySpin is saved
+      await updateUser({
+        demoPoints: newDemo,
+        realBalance: newReal,
+        lastDailySpin: now
+      });
+
+      // Force a re-check after update completes
+      setTimeout(() => {
+        checkCanSpin();
+      }, 100);
+    } catch (error) {
+      console.error('Error processing daily spin win:', error);
+      toast.error('Failed to process spin. Please try again.');
+      setIsProcessing(false);
     }
-
-    await updateUser({
-      demoPoints: newDemo,
-      realBalance: newReal,
-      lastDailySpin: now
-    });
   };
 
   return (
@@ -236,10 +259,10 @@ export function DailySpin({ user, updateUser }: DailySpinProps) {
            <Button 
              size="lg" 
              onClick={spinWheel} 
-             disabled={isSpinning}
-             className="text-xl font-bold px-12 py-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 border-b-4 border-green-800 transform active:translate-y-1 active:border-b-0 transition-all shadow-[0_10px_20px_rgba(16,185,129,0.4)]"
+             disabled={isSpinning || isProcessing || !canSpin}
+             className="text-xl font-bold px-12 py-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 border-b-4 border-green-800 transform active:translate-y-1 active:border-b-0 transition-all shadow-[0_10px_20px_rgba(16,185,129,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
            >
-             {isSpinning ? 'Good Luck!...' : 'SPIN NOW'}
+             {isSpinning ? 'Good Luck!...' : isProcessing ? 'Processing...' : 'SPIN NOW'}
            </Button>
          ) : (
            <div className="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-2xl p-4 text-center min-w-[250px]">
