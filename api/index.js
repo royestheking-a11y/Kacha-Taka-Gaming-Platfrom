@@ -206,6 +206,9 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     console.log('[REGISTER] Creating user with data:', userData);
+    console.log('[REGISTER] User model collection name:', User.collection.name);
+    console.log('[REGISTER] User model db name:', User.db?.databaseName);
+    
     const user = await User.create(userData);
     console.log('[REGISTER] User created in MongoDB:', { 
       id: user._id.toString(), 
@@ -214,6 +217,7 @@ app.post('/api/auth/register', async (req, res) => {
       demoPoints: user.demoPoints,
       realBalance: user.realBalance
     });
+    console.log('[REGISTER] User collection:', user.collection.name);
     
     user.referralCode = user.generateReferralCode();
     const savedUser = await user.save();
@@ -229,7 +233,13 @@ app.post('/api/auth/register', async (req, res) => {
         email: verifyUser.email,
         name: verifyUser.name
       });
+    } else {
+      console.error('[REGISTER] ERROR - User not found after save!');
     }
+    
+    // Count total users in database
+    const totalUsers = await User.countDocuments();
+    console.log('[REGISTER] Total users in database:', totalUsers);
 
     if (user.referredBy) {
       const referrer = await User.findById(user.referredBy);
