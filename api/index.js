@@ -52,6 +52,19 @@ const generateToken = (userId) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });
 };
 
+// Initialize admin on first request (before routes)
+let adminInitPromise = null;
+app.use(async (req, res, next) => {
+  // Initialize admin in background, don't block requests
+  if (!adminInitPromise) {
+    adminInitPromise = initializeAdmin().catch(err => {
+      console.error('Admin init error:', err);
+      adminInitPromise = null; // Reset on error so it can retry
+    });
+  }
+  next();
+});
+
 // Initialize admin user (run once per instance)
 let adminInitPromise = null;
 async function initializeAdmin() {
@@ -154,6 +167,10 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     await connectDB();
+    
+    // Ensure admin is initialized before login
+    await initializeAdmin();
+    
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -162,15 +179,18 @@ app.post('/api/auth/login', async (req, res) => {
 
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
+      console.error(`Login failed: User not found for email: ${email}`);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      console.error(`Login failed: Password mismatch for email: ${email}`);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const token = generateToken(user._id);
+    console.log(`Login successful for user: ${email}`);
     res.json({
       message: 'Login successful',
       token,
@@ -761,12 +781,7 @@ app.put('/api/settings/stats', authenticate, isAdmin, async (req, res) => {
   }
 });
 
-// Initialize admin on first request (non-blocking)
-app.use(async (req, res, next) => {
-  // Initialize admin in background, don't block requests
-  initializeAdmin().catch(err => console.error('Admin init error:', err));
-  next();
-});
+// Admin initialization moved to top (before routes)
 
 // 404 handler
 app.use((req, res) => {
