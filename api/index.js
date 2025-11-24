@@ -129,11 +129,20 @@ app.get('/api/health', async (req, res) => {
 // ==================== AUTH ROUTES ====================
 app.post('/api/auth/register', async (req, res) => {
   try {
+    console.log('[REGISTER] Request received:', { email: req.body?.email, name: req.body?.name });
     await connectDB();
+    console.log('[REGISTER] Database connected');
+    
     const { name, email, phone, password, referralCode } = req.body;
+
+    if (!name || !email || !password) {
+      console.error('[REGISTER] Missing required fields');
+      return res.status(400).json({ message: 'Name, email, and password are required' });
+    }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
+      console.error('[REGISTER] User already exists:', email);
       return res.status(400).json({ message: 'Email already registered' });
     }
 
@@ -148,12 +157,18 @@ app.post('/api/auth/register', async (req, res) => {
       const referrer = await User.findOne({ referralCode: referralCode.toUpperCase() });
       if (referrer) {
         userData.referredBy = referrer._id;
+        console.log('[REGISTER] Referral code found:', referralCode);
       }
     }
 
+    console.log('[REGISTER] Creating user...');
     const user = await User.create(userData);
+    console.log('[REGISTER] User created:', user._id, user.email);
+    
     user.referralCode = user.generateReferralCode();
     await user.save();
+    console.log('[REGISTER] User saved with referral code:', user.referralCode);
+    console.log('[REGISTER] User data:', { id: user._id, email: user.email, name: user.name });
 
     if (user.referredBy) {
       const referrer = await User.findById(user.referredBy);
@@ -161,24 +176,31 @@ app.post('/api/auth/register', async (req, res) => {
         referrer.referralEarnings += 500;
         referrer.demoPoints += 500;
         await referrer.save();
+        console.log('[REGISTER] Referral bonus awarded');
       }
     }
 
     const token = generateToken(user._id);
+    console.log('[REGISTER] Registration successful for:', email);
+    console.log('[REGISTER] Returning user data:', { id: user._id, email: user.email, name: user.name });
+    
     res.status(201).json({
       message: 'Registration successful',
       token,
       user: user.toJSON()
     });
   } catch (error) {
-    console.error('Register error:', error);
+    console.error('[REGISTER] Error:', error);
+    console.error('[REGISTER] Error stack:', error.stack);
     res.status(500).json({ message: error.message || 'Registration failed' });
   }
 });
 
 app.post('/api/auth/login', async (req, res) => {
   try {
+    console.log('[LOGIN] Request received:', { email: req.body?.email });
     await connectDB();
+    console.log('[LOGIN] Database connected');
     
     // Ensure admin is initialized before login
     await initializeAdmin();
@@ -186,30 +208,32 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
+      console.error('[LOGIN] Missing email or password');
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
-      console.error(`Login failed: User not found for email: ${email}`);
+      console.error(`[LOGIN] User not found for email: ${email}`);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      console.error(`Login failed: Password mismatch for email: ${email}`);
+      console.error(`[LOGIN] Password mismatch for email: ${email}`);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const token = generateToken(user._id);
-    console.log(`Login successful for user: ${email}`);
+    console.log(`[LOGIN] Login successful for user: ${email}`);
     res.json({
       message: 'Login successful',
       token,
       user: user.toJSON()
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('[LOGIN] Error:', error);
+    console.error('[LOGIN] Error stack:', error.stack);
     res.status(500).json({ message: error.message || 'Login failed' });
   }
 });
@@ -382,6 +406,7 @@ app.get('/api/users/:id/referrals', authenticate, async (req, res) => {
 
 app.put('/api/users/:id', authenticate, async (req, res) => {
   try {
+    console.log('[UPDATE_USER] Updating user:', req.params.id, req.body);
     await connectDB();
     if (req.params.id !== req.user._id.toString() && !req.user.isAdmin) {
       return res.status(403).json({ message: 'Access denied' });
@@ -389,6 +414,7 @@ app.put('/api/users/:id', authenticate, async (req, res) => {
 
     const user = await User.findById(req.params.id);
     if (!user) {
+      console.error('[UPDATE_USER] User not found:', req.params.id);
       return res.status(404).json({ message: 'User not found' });
     }
 
@@ -402,8 +428,10 @@ app.put('/api/users/:id', authenticate, async (req, res) => {
     }
 
     await user.save();
+    console.log('[UPDATE_USER] User updated successfully:', req.params.id);
     res.json(user.toJSON());
   } catch (error) {
+    console.error('[UPDATE_USER] Error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -431,13 +459,16 @@ app.patch('/api/users/:id/balance', authenticate, isAdmin, async (req, res) => {
 // ==================== GAME ROUTES ====================
 app.post('/api/games/history', authenticate, async (req, res) => {
   try {
+    console.log('[GAME_HISTORY] Saving game history for user:', req.user._id);
     await connectDB();
     const gameHistory = await GameHistory.create({
       ...req.body,
       userId: req.user._id
     });
+    console.log('[GAME_HISTORY] Game history saved:', gameHistory._id);
     res.status(201).json(gameHistory);
   } catch (error) {
+    console.error('[GAME_HISTORY] Error:', error);
     res.status(500).json({ message: error.message });
   }
 });

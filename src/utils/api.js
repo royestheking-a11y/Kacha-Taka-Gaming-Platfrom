@@ -37,16 +37,45 @@ const apiRequest = async (endpoint, options = {}) => {
   }
 
   try {
+    console.log(`[API] ${options.method || 'GET'} ${url}`, options.body ? JSON.parse(options.body) : '');
     const response = await fetch(url, config);
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+    
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // If not JSON, get text to see what we got
+      const text = await response.text();
+      console.error(`[API] Non-JSON response from ${url}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        contentType: contentType,
+        text: text.substring(0, 500)
+      });
+      throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}. ${text.substring(0, 100)}`);
     }
 
+    if (!response.ok) {
+      console.error(`[API] Error response from ${url}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        data: data
+      });
+      throw new Error(data.message || `HTTP error! status: ${response.status} ${response.statusText}`);
+    }
+
+    console.log(`[API] Success: ${options.method || 'GET'} ${url}`, data);
     return data;
   } catch (error) {
-    console.error('API Error:', error);
+    console.error(`[API] Request failed: ${options.method || 'GET'} ${url}`, {
+      error: error.message,
+      stack: error.stack,
+      url: url,
+      config: { method: options.method, headers: config.headers }
+    });
     throw error;
   }
 };

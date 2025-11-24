@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { initializeStorage, generateReferralCode, getUserByReferralCode, addReferralBonus } from '@/utils/storage';
+import { initializeStorage } from '@/utils/storageMongo';
+import { authAPI } from '@/utils/api';
 import { User } from '@/App';
 import { toast } from 'sonner';
 import { OTPVerification } from './OTPVerification';
@@ -64,28 +65,23 @@ export function AuthDialog({ open, onOpenChange, onLogin, defaultTab = 'login' }
     setError('');
     setIsLoading(true);
     
-    setTimeout(() => {
-      try {
-        initializeStorage();
-        const users = JSON.parse(localStorage.getItem('kachaTaka_users') || '[]');
-        const user = users.find((u: any) => u.email === loginEmail && u.password === loginPassword && !u.isAdmin);
-        
-        if (user) {
-          const { password, ...safeUser } = user;
-          onLogin(safeUser);
-          toast.success('Login successful!');
-          onOpenChange(false);
-        } else {
-          setError('Invalid email or password');
-          toast.error('Login failed');
-        }
-      } catch (err) {
-        setError('An error occurred. Please try again.');
-        toast.error('An error occurred');
-      } finally {
-        setIsLoading(false);
+    try {
+      const response = await authAPI.login(loginEmail, loginPassword);
+      if (response.user && response.token) {
+        onLogin(response.user, response.token);
+        toast.success('Login successful!');
+        onOpenChange(false);
+      } else {
+        setError('Login failed');
+        toast.error('Login failed');
       }
-    }, 800);
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Invalid email or password');
+      toast.error(err.message || 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -106,31 +102,31 @@ export function AuthDialog({ open, onOpenChange, onLogin, defaultTab = 'login' }
     setIsLoading(true);
     
     try {
-      initializeStorage();
-      const users = JSON.parse(localStorage.getItem('kachaTaka_users') || '[]');
+      // Send OTP via API
+      const response = await authAPI.sendOTP(regEmail, 'registration');
       
-      if (users.find((u: any) => u.email === regEmail)) {
-        setError('Email already registered');
-        setIsLoading(false);
-        return;
-      }
-      
-      // Generate and send OTP
-      const otp = generateOTP();
-      storeOTP(regEmail, otp, 'registration');
-      
-      const result = await sendOTPEmail(regEmail, otp, 'registration');
-      
-      if (result.success) {
-        toast.success('OTP sent to your email');
-        setCurrentStep('otp-verification');
+      if (response.success) {
+        // OTP is returned in response.otp for EmailJS
+        const otpCode = response.otp;
+        
+        // Send email via EmailJS
+        const emailResult = await sendOTPEmail(regEmail, otpCode, 'registration');
+        
+        if (emailResult.success) {
+          toast.success('OTP sent to your email');
+          setCurrentStep('otp-verification');
+        } else {
+          setError(emailResult.message);
+          toast.error(emailResult.message);
+        }
       } else {
-        setError(result.message);
-        toast.error(result.message);
+        setError(response.message || 'Failed to send OTP');
+        toast.error(response.message || 'Failed to send OTP');
       }
-    } catch (err) {
-      setError('Failed to send OTP. Please try again.');
-      toast.error('Failed to send OTP');
+    } catch (err: any) {
+      console.error('Send OTP error:', err);
+      setError(err.message || 'Failed to send OTP. Please try again.');
+      toast.error(err.message || 'Failed to send OTP');
     } finally {
       setIsLoading(false);
     }
@@ -139,22 +135,31 @@ export function AuthDialog({ open, onOpenChange, onLogin, defaultTab = 'login' }
   const handleResendOTP = async () => {
     setIsLoading(true);
     setError('');
+    setRegOTP(['', '', '', '', '', '']);
     
     try {
-      const otp = generateOTP();
-      storeOTP(regEmail, otp, 'registration');
+      // Resend OTP via API
+      const response = await authAPI.sendOTP(regEmail, 'registration');
       
-      const result = await sendOTPEmail(regEmail, otp, 'registration');
-      
-      if (!result.success) {
-        setError(result.message);
-        toast.error(result.message);
+      if (response.success) {
+        const otpCode = response.otp;
+        const emailResult = await sendOTPEmail(regEmail, otpCode, 'registration');
+        
+        if (emailResult.success) {
+          toast.success('New OTP sent to your email');
+          setSuccess('New OTP sent to your email. Please check and enter the code.');
+        } else {
+          setError(emailResult.message);
+          toast.error(emailResult.message);
+        }
       } else {
-        toast.success('New OTP sent to your email');
+        setError(response.message || 'Failed to resend OTP');
+        toast.error(response.message || 'Failed to resend OTP');
       }
-    } catch (err) {
-      setError('Failed to resend OTP');
-      toast.error('Failed to resend OTP');
+    } catch (err: any) {
+      console.error('Resend OTP error:', err);
+      setError(err.message || 'Failed to resend OTP');
+      toast.error(err.message || 'Failed to resend OTP');
     } finally {
       setIsLoading(false);
     }
@@ -166,58 +171,40 @@ export function AuthDialog({ open, onOpenChange, onLogin, defaultTab = 'login' }
     setSuccess('');
     
     try {
-      initializeStorage();
-      const users = JSON.parse(localStorage.getItem('kachaTaka_users') || '[]');
-      
-      const newUser = {
-        id: `user-${Date.now()}`,
+      // Register user via API (MongoDB)
+      const { authAPI } = await import('@/utils/api');
+      const response = await authAPI.register({
         name: regName,
         email: regEmail,
         phone: regPhone,
         password: regPassword,
-        demoPoints: 100, // Initial demo balance
-        realBalance: 0,
-        isAdmin: false,
-        createdAt: new Date().toISOString(),
-        kycStatus: 'pending' as const,
-        referralCode: generateReferralCode(`user-${Date.now()}`),
-        referredBy: '',
-        referralEarnings: 0
-      };
+        referralCode: referralCode.trim() || undefined
+      });
       
-      // Check if referral code is valid
-      if (referralCode.trim()) {
-        const referrer = getUserByReferralCode(referralCode.trim().toUpperCase());
-        if (referrer) {
-          newUser.referredBy = referrer.id;
+      if (response.user && response.token) {
+        if (response.user.referredBy) {
+          toast.success('Account created! Referral bonus awarded to your referrer.');
+        } else {
+          toast.success('Account created successfully!');
         }
-      }
-      
-      users.push(newUser);
-      localStorage.setItem('kachaTaka_users', JSON.stringify(users));
-      
-      // Add referral bonus after user is created
-      if (newUser.referredBy) {
-        addReferralBonus(newUser.referredBy, 50);
-        toast.success('Account created! Referral bonus awarded.');
+        
+        // Clear form and switch to login
+        setRegName('');
+        setRegEmail('');
+        setRegPhone('');
+        setRegPassword('');
+        setRegConfirmPassword('');
+        setReferralCode('');
+        setCurrentStep('login');
+        setActiveTab('login');
+        setSuccess('Account created successfully! Please log in.');
       } else {
-        toast.success('Account created successfully!');
+        throw new Error('Registration failed');
       }
-      
-      // Clear form and switch to login
-      setRegName('');
-      setRegEmail('');
-      setRegPhone('');
-      setRegPassword('');
-      setRegConfirmPassword('');
-      setReferralCode('');
-      setCurrentStep('login');
-      setActiveTab('login');
-      setSuccess('Account created successfully! Please log in.');
-      
-    } catch (err) {
-      setError('Registration failed. Please try again.');
-      toast.error('Registration failed');
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      setError(err.message || 'Registration failed. Please try again.');
+      toast.error(err.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }
