@@ -404,6 +404,13 @@ export async function getUserByReferralCode(code: string): Promise<User | null> 
 
 export async function getReferrals(userId: string): Promise<User[]> {
   try {
+    // Check for token before making API call
+    const token = localStorage.getItem('kachaTaka_token');
+    if (!token) {
+      console.warn('[storageMongo] No token found, skipping getReferrals');
+      return [];
+    }
+    
     const referrals = await api.users.getReferrals(userId);
     return referrals.map(transformUser);
   } catch (error) {

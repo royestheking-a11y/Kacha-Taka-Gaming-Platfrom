@@ -186,7 +186,28 @@ export default function App() {
       return <Auth onLogin={handleLogin} onNavigate={setCurrentPage} defaultTab="register" />;
     }
 
-    if (!currentUser) {
+    // Check if user is authenticated for protected pages
+    const protectedPages = ['dashboard', 'crash', 'mines', 'slots', 'dice', 'profile', 'wallet', 'messages', 'admin'];
+    if (protectedPages.includes(currentPage) && !currentUser) {
+      // Check if there's a token but user state is not set
+      const token = localStorage.getItem('kachaTaka_token');
+      if (token) {
+        // Try to restore user from localStorage
+        const savedUser = localStorage.getItem('kachaTaka_currentUser');
+        if (savedUser) {
+          try {
+            const user = JSON.parse(savedUser);
+            setCurrentUser(user);
+            return null; // Will re-render with user
+          } catch (e) {
+            console.error('Error parsing saved user:', e);
+          }
+        }
+      }
+      return <Landing onNavigate={setCurrentPage} user={currentUser} />;
+    }
+    
+    if (!currentUser && protectedPages.includes(currentPage)) {
       return <Landing onNavigate={setCurrentPage} user={currentUser} />;
     }
 
