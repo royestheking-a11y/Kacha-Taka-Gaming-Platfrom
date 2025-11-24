@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User } from '@/App';
-import { addGameHistory, formatCurrency, getGameSettings } from '@/utils/storage';
+import { addGameHistory, formatCurrency, getGameSettings } from '@/utils/storageMongo';
 import { soundManager } from '@/utils/audio';
 import { toast } from 'sonner';
 import { BalanceSelector } from '@/components/BalanceSelector';
@@ -40,6 +40,7 @@ export function SlotsGame({ user, updateUser }: SlotsGameProps) {
   const [betAmount, setBetAmount] = useState(10);
   const [spinning, setSpinning] = useState(false);
   const [selectedBalance, setSelectedBalance] = useState<'demo' | 'main'>('demo');
+  const [settings, setSettings] = useState<any>({ slots: { enabled: true, minBet: 10, maxBet: 10000, rtp: 0.95 } });
   const [reels, setReels] = useState<any[][]>([
     [SYMBOLS[0], SYMBOLS[1], SYMBOLS[2]],
     [SYMBOLS[1], SYMBOLS[2], SYMBOLS[0]],
@@ -47,8 +48,15 @@ export function SlotsGame({ user, updateUser }: SlotsGameProps) {
   ]);
   
   // Settings
-  const settings = getGameSettings();
   const config = settings.slots || { enabled: true, minBet: 10, maxBet: 10000, rtp: 0.95 };
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const gameSettings = await getGameSettings();
+      setSettings(gameSettings);
+    };
+    loadSettings();
+  }, []);
 
   // Auto-switch to main if demo is empty
   useEffect(() => {
@@ -145,20 +153,22 @@ export function SlotsGame({ user, updateUser }: SlotsGameProps) {
        toast.success(`BIG WIN! ${formatCurrency(totalWin)}`);
     }
 
-    addGameHistory({
-      id: Date.now().toString(),
-      userId: user.id,
-      game: 'slots',
-      roundId: Date.now().toString(),
-      betAmount,
-      isDemo: selectedBalance === 'demo',
-      result: totalWin > 0 ? 'win' : 'loss',
-      winAmount: totalWin,
-      multiplier: totalWin / betAmount,
-      serverSeed: 'hidden',
-      seedHash: 'hash',
-      timestamp: new Date().toISOString()
-    });
+    try {
+      await addGameHistory({
+        userId: user.id,
+        game: 'slots',
+        roundId: Date.now().toString(),
+        betAmount,
+        isDemo: selectedBalance === 'demo',
+        result: totalWin > 0 ? 'win' : 'loss',
+        winAmount: totalWin,
+        multiplier: totalWin / betAmount,
+        serverSeed: 'hidden',
+        seedHash: 'hash'
+      });
+    } catch (error) {
+      console.error('Error saving game history:', error);
+    }
   };
 
   if (!config.enabled) {

@@ -112,7 +112,29 @@ export default function App() {
   };
 
   const updateUser = async (updates: Partial<User>) => {
-    if (currentUser) {
+    if (!currentUser) return;
+    
+    // Update local state immediately for UI responsiveness
+    const updatedUser = { ...currentUser, ...updates };
+    setCurrentUser(updatedUser);
+    localStorage.setItem('kachaTaka_currentUser', JSON.stringify(updatedUser));
+    
+    // Save to MongoDB via API
+    try {
+      const { usersAPI } = await import('./utils/api');
+      await usersAPI.update(currentUser.id, updates);
+      
+      // Refresh user data from server to ensure consistency
+      const response = await authAPI.getCurrentUser();
+      if (response.user) {
+        setCurrentUser(response.user);
+        localStorage.setItem('kachaTaka_currentUser', JSON.stringify(response.user));
+      }
+    } catch (error) {
+      console.error('Failed to update user in MongoDB:', error);
+      // Continue with local update even if API fails
+    }
+  };
       const updatedUser = { ...currentUser, ...updates };
       setCurrentUser(updatedUser);
       localStorage.setItem('kachaTaka_currentUser', JSON.stringify(updatedUser));

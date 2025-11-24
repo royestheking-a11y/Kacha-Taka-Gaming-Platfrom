@@ -8,7 +8,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { User } from '@/App';
 import { generateGameResult } from '@/utils/provablyFair';
-import { addGameHistory, formatCurrency, getGameSettings } from '@/utils/storage';
+import { addGameHistory, formatCurrency, getGameSettings } from '@/utils/storageMongo';
 import { soundManager } from '@/utils/audio';
 import { toast } from 'sonner';
 import { BalanceSelector } from '@/components/BalanceSelector';
@@ -37,8 +37,16 @@ export function CrashGame({ user, updateUser, setActiveTab }: CrashGameProps) {
   const startTimeRef = useRef<number>(0);
 
   // Settings
-  const settings = getGameSettings();
+  const [settings, setSettings] = useState<any>({ crash: { enabled: true, minBet: 10, maxBet: 10000, houseFactor: 0.97 } });
   const config = settings.crash || { enabled: true, minBet: 10, maxBet: 10000, houseFactor: 0.97 };
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const gameSettings = await getGameSettings();
+      setSettings(gameSettings);
+    };
+    loadSettings();
+  }, []);
 
   // Auto-switch to main if demo is empty
   useEffect(() => {
@@ -313,20 +321,22 @@ export function CrashGame({ user, updateUser, setActiveTab }: CrashGameProps) {
     setMultiplier(finalM);
     setHistory(prev => [finalM, ...prev].slice(0, 10));
     
-    addGameHistory({
-      id: Date.now().toString(),
-      userId: user.id,
-      game: 'crash',
-      roundId: Date.now().toString(),
-      betAmount,
-      isDemo: selectedBalance === 'demo',
-      result: finalM,
-      winAmount: 0,
-      multiplier: 0,
-      serverSeed: 'hidden',
-      seedHash: 'hash',
-      timestamp: new Date().toISOString()
-    });
+    try {
+      await addGameHistory({
+        userId: user.id,
+        game: 'crash',
+        roundId: Date.now().toString(),
+        betAmount,
+        isDemo: selectedBalance === 'demo',
+        result: finalM,
+        winAmount: 0,
+        multiplier: 0,
+        serverSeed: 'hidden',
+        seedHash: 'hash'
+      });
+    } catch (error) {
+      console.error('Error saving game history:', error);
+    }
   };
 
   const handleCashout = async (currentM: number = multiplier) => {
@@ -345,20 +355,22 @@ export function CrashGame({ user, updateUser, setActiveTab }: CrashGameProps) {
     }
     toast.success(`Cashed out at ${currentM.toFixed(2)}x! Won ${formatCurrency(winAmount)}`);
     
-    addGameHistory({
-      id: Date.now().toString(),
-      userId: user.id,
-      game: 'crash',
-      roundId: Date.now().toString(),
-      betAmount,
-      isDemo: selectedBalance === 'demo',
-      result: crashPoint,
-      winAmount: winAmount,
-      multiplier: currentM,
-      serverSeed: 'hidden',
-      seedHash: 'hash',
-      timestamp: new Date().toISOString()
-    });
+    try {
+      await addGameHistory({
+        userId: user.id,
+        game: 'crash',
+        roundId: Date.now().toString(),
+        betAmount,
+        isDemo: selectedBalance === 'demo',
+        result: crashPoint,
+        winAmount: winAmount,
+        multiplier: currentM,
+        serverSeed: 'hidden',
+        seedHash: 'hash'
+      });
+    } catch (error) {
+      console.error('Error saving game history:', error);
+    }
   };
 
   if (!config.enabled) {

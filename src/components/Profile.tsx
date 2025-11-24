@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User as UserIcon, Mail, Phone, Lock, Save, Gift, Users, Copy, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { User } from '@/App';
-import { getReferrals } from '@/utils/storage';
+import { getReferrals } from '@/utils/storageMongo';
 import { toast } from 'sonner';
 
 interface ProfileProps {
@@ -20,8 +20,19 @@ export function Profile({ user, updateUser }: ProfileProps) {
   const [phone, setPhone] = useState(user.phone);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [referrals, setReferrals] = useState<any[]>([]);
 
-  const referrals = getReferrals(user.id);
+  useEffect(() => {
+    const loadReferrals = async () => {
+      try {
+        const refs = await getReferrals(user.id);
+        setReferrals(refs);
+      } catch (error) {
+        console.error('Error loading referrals:', error);
+      }
+    };
+    loadReferrals();
+  }, [user.id]);
 
   const handleSave = () => {
     setIsLoading(true);

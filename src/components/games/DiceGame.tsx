@@ -28,8 +28,16 @@ export function DiceGame({ user, updateUser }: DiceGameProps) {
   const [selectedBalance, setSelectedBalance] = useState<'demo' | 'main'>('demo');
 
   // Settings
-  const settings = getGameSettings();
+  const [settings, setSettings] = useState<any>({ dice: { enabled: true, minBet: 10, maxBet: 10000, houseEdge: 0.02 } });
   const config = settings.dice || { enabled: true, minBet: 10, maxBet: 10000, houseEdge: 0.02 };
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const gameSettings = await getGameSettings();
+      setSettings(gameSettings);
+    };
+    loadSettings();
+  }, []);
 
   // Auto-switch to main if demo is empty
   useEffect(() => {
@@ -123,8 +131,8 @@ export function DiceGame({ user, updateUser }: DiceGameProps) {
           }
           toast.success(`You Won ${formatCurrency(winAmount)}!`);
           
-          addGameHistory({
-              id: Date.now().toString(),
+          try {
+            await addGameHistory({
               userId: user.id,
               game: 'dice',
               roundId: Date.now().toString(),
@@ -134,12 +142,14 @@ export function DiceGame({ user, updateUser }: DiceGameProps) {
               winAmount,
               multiplier,
               serverSeed: 'hidden',
-              seedHash: 'hash',
-              timestamp: new Date().toISOString()
-          });
+              seedHash: 'hash'
+            });
+          } catch (error) {
+            console.error('Error saving game history:', error);
+          }
         } else {
-           addGameHistory({
-              id: Date.now().toString(),
+           try {
+            await addGameHistory({
               userId: user.id,
               game: 'dice',
               roundId: Date.now().toString(),
@@ -149,9 +159,11 @@ export function DiceGame({ user, updateUser }: DiceGameProps) {
               winAmount: 0,
               multiplier: 0,
               serverSeed: 'hidden',
-              seedHash: 'hash',
-              timestamp: new Date().toISOString()
-          });
+              seedHash: 'hash'
+            });
+          } catch (error) {
+            console.error('Error saving game history:', error);
+          }
         }
       } catch (error) {
         console.error("RNG Error:", error);

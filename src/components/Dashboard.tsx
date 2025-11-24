@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Play, TrendingUp, Trophy, Target, ArrowRight, Rocket, Zap, Dna, Gamepad2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { User } from '@/App';
-import { getGameHistory, formatCurrency } from '@/utils/storage';
+import { getGameHistory, formatCurrency } from '@/utils/storageMongo';
 import { DailySpin } from './DailySpin';
 
 interface DashboardProps {
@@ -14,7 +14,23 @@ interface DashboardProps {
 }
 
 export function Dashboard({ user, onNavigate, updateUser }: DashboardProps) {
-  const history = getGameHistory(user.id);
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const gameHistory = await getGameHistory(user.id);
+        setHistory(gameHistory);
+      } catch (error) {
+        console.error('Error loading game history:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadHistory();
+  }, [user.id]);
+
   const totalWagered = history.reduce((acc, curr) => acc + curr.betAmount, 0);
   const totalWon = history.reduce((acc, curr) => acc + curr.winAmount, 0);
   const profit = totalWon - totalWagered;

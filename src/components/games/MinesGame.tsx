@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User } from '@/App';
 import { generateGameResult } from '@/utils/provablyFair';
-import { addGameHistory, formatCurrency, getGameSettings } from '@/utils/storage';
+import { addGameHistory, formatCurrency, getGameSettings } from '@/utils/storageMongo';
 import { soundManager } from '@/utils/audio';
 import { toast } from 'sonner';
 import { BalanceSelector } from '@/components/BalanceSelector';
@@ -31,8 +31,16 @@ export function MinesGame({ user, updateUser }: MinesGameProps) {
   const [selectedBalance, setSelectedBalance] = useState<'demo' | 'main'>('demo');
 
   // Settings
-  const settings = getGameSettings();
+  const [settings, setSettings] = useState<any>({ mines: { enabled: true, minBet: 10, maxBet: 10000, minMines: 1, maxMines: 24 } });
   const config = settings.mines || { enabled: true, minBet: 10, maxBet: 10000, minMines: 1, maxMines: 24 };
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const gameSettings = await getGameSettings();
+      setSettings(gameSettings);
+    };
+    loadSettings();
+  }, []);
 
   // Auto-switch to main if demo is empty
   useEffect(() => {
@@ -151,20 +159,22 @@ export function MinesGame({ user, updateUser }: MinesGameProps) {
     setGrid(finalGrid);
 
     if (!win) {
-      addGameHistory({
-        id: Date.now().toString(),
-        userId: user.id,
-        game: 'mines',
-        roundId: Date.now().toString(),
-        betAmount,
-        isDemo: selectedBalance === 'demo',
-        result: 'loss',
-        winAmount: 0,
-        multiplier: 0,
-        serverSeed: 'hidden',
-        seedHash: 'hash',
-        timestamp: new Date().toISOString()
-      });
+      try {
+        await addGameHistory({
+          userId: user.id,
+          game: 'mines',
+          roundId: Date.now().toString(),
+          betAmount,
+          isDemo: selectedBalance === 'demo',
+          result: 'loss',
+          winAmount: 0,
+          multiplier: 0,
+          serverSeed: 'hidden',
+          seedHash: 'hash'
+        });
+      } catch (error) {
+        console.error('Error saving game history:', error);
+      }
     }
   };
 
@@ -191,20 +201,22 @@ export function MinesGame({ user, updateUser }: MinesGameProps) {
 
     toast.success(`Won ${formatCurrency(winAmount)}!`);
     
-    addGameHistory({
-      id: Date.now().toString(),
-      userId: user.id,
-      game: 'mines',
-      roundId: Date.now().toString(),
-      betAmount,
-      isDemo: selectedBalance === 'demo',
-      result: 'win',
-      winAmount: winAmount,
-      multiplier: finalMultiplier,
-      serverSeed: 'hidden',
-      seedHash: 'hash',
-      timestamp: new Date().toISOString()
-    });
+    try {
+      await addGameHistory({
+        userId: user.id,
+        game: 'mines',
+        roundId: Date.now().toString(),
+        betAmount,
+        isDemo: selectedBalance === 'demo',
+        result: 'win',
+        winAmount: winAmount,
+        multiplier: finalMultiplier,
+        serverSeed: 'hidden',
+        seedHash: 'hash'
+      });
+    } catch (error) {
+      console.error('Error saving game history:', error);
+    }
   };
 
   if (!config.enabled) {
