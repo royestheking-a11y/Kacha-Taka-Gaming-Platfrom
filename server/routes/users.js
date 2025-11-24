@@ -51,6 +51,8 @@ router.put('/:id', authenticate, async (req, res) => {
       // Allow other non-sensitive fields
       if (req.body.name !== undefined) user.name = req.body.name;
       if (req.body.phone !== undefined) user.phone = req.body.phone;
+      // Allow users to update lastDailySpin for daily spin feature
+      if (req.body.lastDailySpin !== undefined) user.lastDailySpin = req.body.lastDailySpin;
     }
 
     await user.save();

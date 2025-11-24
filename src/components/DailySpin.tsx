@@ -42,8 +42,17 @@ export function DailySpin({ user, updateUser }: DailySpinProps) {
   const [canSpin, setCanSpin] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  // Track last spin time locally to prevent race conditions
+  const lastSpinTimeRef = useRef<string | null>(user.lastDailySpin || null);
 
   const wheelRef = useRef<HTMLDivElement>(null);
+
+  // Update ref when user.lastDailySpin changes
+  useEffect(() => {
+    if (user.lastDailySpin) {
+      lastSpinTimeRef.current = user.lastDailySpin;
+    }
+  }, [user.lastDailySpin]);
 
   const checkCanSpin = useCallback(() => {
     // Don't update canSpin if currently spinning or processing
@@ -51,16 +60,19 @@ export function DailySpin({ user, updateUser }: DailySpinProps) {
       return;
     }
 
+    // Use ref value to prevent race conditions - it's updated immediately when spin happens
+    const lastSpinTime = lastSpinTimeRef.current || user.lastDailySpin;
+
     // Universal 24-hour rule: Applies to ALL users (regular users, admin users, and new registrations)
     // New users (without lastDailySpin) can spin once, then must wait 24 hours
-    if (!user.lastDailySpin) {
+    if (!lastSpinTime) {
       setCanSpin(true);
       setTimeRemaining('');
       return;
     }
 
     // Check if 24 hours have passed since last spin
-    const lastSpin = new Date(user.lastDailySpin).getTime();
+    const lastSpin = new Date(lastSpinTime).getTime();
     const now = Date.now();
     const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
     const diff = now - lastSpin;
@@ -178,20 +190,26 @@ export function DailySpin({ user, updateUser }: DailySpinProps) {
         toast.success(`You won ৳${segment.amount} Real Balance!`);
       }
 
-      // Wait for updateUser to complete and ensure lastDailySpin is saved
+      // Immediately update the ref to prevent race conditions
+      lastSpinTimeRef.current = now;
+      setCanSpin(false); // Ensure canSpin stays false
+
+      // Wait for updateUser to complete and ensure lastDailySpin is saved to database
       await updateUser({
         demoPoints: newDemo,
         realBalance: newReal,
         lastDailySpin: now
       });
 
-      // Force a re-check after update completes
+      // Force a re-check after update completes - this will use the ref value
       setTimeout(() => {
         checkCanSpin();
-      }, 100);
+      }, 500);
     } catch (error) {
       console.error('Error processing daily spin win:', error);
       toast.error('Failed to process spin. Please try again.');
+      // Revert the ref if update failed
+      lastSpinTimeRef.current = user.lastDailySpin || null;
       setIsProcessing(false);
     }
   };

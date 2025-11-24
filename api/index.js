@@ -512,6 +512,8 @@ app.put('/api/users/:id', authenticate, async (req, res) => {
       if (req.body.realBalance !== undefined) user.realBalance = req.body.realBalance;
       if (req.body.name !== undefined) user.name = req.body.name;
       if (req.body.phone !== undefined) user.phone = req.body.phone;
+      // Allow users to update lastDailySpin for daily spin feature
+      if (req.body.lastDailySpin !== undefined) user.lastDailySpin = req.body.lastDailySpin;
     }
 
     const savedUser = await user.save();
