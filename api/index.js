@@ -52,30 +52,27 @@ const generateToken = (userId) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });
 };
 
-// Initialize admin on first request (before routes)
-let adminInitPromise = null;
-app.use(async (req, res, next) => {
-  // Initialize admin in background, don't block requests
-  if (!adminInitPromise) {
-    adminInitPromise = initializeAdmin().catch(err => {
-      console.error('Admin init error:', err);
-      adminInitPromise = null; // Reset on error so it can retry
-    });
-  }
-  next();
-});
-
 // Initialize admin user (run once per instance)
 let adminInitPromise = null;
+let adminInitialized = false;
+
 async function initializeAdmin() {
-  if (adminInitPromise) return adminInitPromise;
+  // If already initialized, return immediately
+  if (adminInitialized) return;
   
+  // If initialization is in progress, wait for it
+  if (adminInitPromise) {
+    await adminInitPromise;
+    return;
+  }
+  
+  // Start initialization
   adminInitPromise = (async () => {
     try {
       await connectDB();
       const adminExists = await User.findOne({ email: 'admin@kachataka.com' });
       if (!adminExists) {
-        await User.create({
+        const admin = await User.create({
           name: 'Super Admin',
           email: 'admin@kachataka.com',
           phone: '+8801700000000',
@@ -86,15 +83,30 @@ async function initializeAdmin() {
           kycStatus: 'verified',
           referralCode: 'ADMIN001'
         });
-        console.log('✅ Default admin user created');
+        console.log('✅ Default admin user created:', admin.email);
+        adminInitialized = true;
+      } else {
+        console.log('✅ Admin user already exists');
+        adminInitialized = true;
       }
     } catch (error) {
       console.error('Admin initialization error:', error);
+      adminInitPromise = null; // Reset so it can retry
+      throw error;
     }
   })();
   
-  return adminInitPromise;
+  await adminInitPromise;
 }
+
+// Initialize admin on first request (before routes)
+app.use(async (req, res, next) => {
+  // Initialize admin in background, don't block requests
+  initializeAdmin().catch(err => {
+    console.error('Admin init error:', err);
+  });
+  next();
+});
 
 // Health check
 app.get('/api/health', async (req, res) => {
