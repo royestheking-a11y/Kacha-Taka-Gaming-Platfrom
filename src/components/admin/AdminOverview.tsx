@@ -13,10 +13,16 @@ export function AdminOverview() {
   }, []);
 
   const loadData = async () => {
-    const usersData = await getAllUsers();
-    const paymentsData = await getPaymentRequests();
-    setUsers(usersData);
-    setAllPaymentRequests(paymentsData);
+    try {
+      console.log('[AdminOverview] Loading data from MongoDB...');
+      const usersData = await getAllUsers();
+      const paymentsData = await getPaymentRequests();
+      console.log('[AdminOverview] Data loaded:', { users: usersData.length, payments: paymentsData.length });
+      setUsers(usersData);
+      setAllPaymentRequests(paymentsData);
+    } catch (error) {
+      console.error('[AdminOverview] Error loading data:', error);
+    }
   };
   
   // Separate pending and completed requests

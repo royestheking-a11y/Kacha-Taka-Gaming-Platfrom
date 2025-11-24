@@ -38,16 +38,28 @@ export function AdminUsers() {
   };
 
   const loadUsers = async () => {
-    const usersData = await getAllUsers();
-    setUsers(usersData);
-    
-    // Load referral counts
-    const counts: Record<string, number> = {};
-    for (const user of usersData) {
-      const referrals = await getReferrals(user.id);
-      counts[user.id] = referrals.length;
+    try {
+      console.log('[AdminUsers] Loading users from MongoDB...');
+      const usersData = await getAllUsers();
+      console.log('[AdminUsers] Users loaded:', usersData.length);
+      setUsers(usersData);
+      
+      // Load referral counts
+      const counts: Record<string, number> = {};
+      for (const user of usersData) {
+        try {
+          const referrals = await getReferrals(user.id);
+          counts[user.id] = referrals.length;
+        } catch (err) {
+          console.error(`[AdminUsers] Error loading referrals for user ${user.id}:`, err);
+          counts[user.id] = 0;
+        }
+      }
+      setReferralCounts(counts);
+    } catch (error) {
+      console.error('[AdminUsers] Error loading users:', error);
+      toast.error('Failed to load users. Please check console for details.');
     }
-    setReferralCounts(counts);
   };
 
   const filtered = users.filter(u => 

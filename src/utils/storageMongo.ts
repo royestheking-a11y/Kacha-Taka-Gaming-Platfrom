@@ -91,10 +91,16 @@ function transformUser(user: any): User {
 // User operations
 export async function getAllUsers(): Promise<User[]> {
   try {
+    console.log('[storageMongo] Fetching all users from API...');
     const users = await api.users.getAll();
+    console.log('[storageMongo] Users fetched:', users.length);
     return users.map(transformUser);
-  } catch (error) {
-    console.error('Error fetching users:', error);
+  } catch (error: any) {
+    console.error('[storageMongo] Error fetching users:', error);
+    console.error('[storageMongo] Error details:', {
+      message: error.message,
+      stack: error.stack
+    });
     return [];
   }
 }
