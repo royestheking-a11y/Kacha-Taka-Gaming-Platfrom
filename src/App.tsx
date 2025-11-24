@@ -135,20 +135,6 @@ export default function App() {
       // Continue with local update even if API fails
     }
   };
-      const updatedUser = { ...currentUser, ...updates };
-      setCurrentUser(updatedUser);
-      localStorage.setItem('kachaTaka_currentUser', JSON.stringify(updatedUser));
-      
-      // Update in MongoDB via API
-      try {
-        const { usersAPI } = await import('./utils/api');
-        await usersAPI.update(currentUser.id, updates);
-      } catch (error) {
-        console.error('Failed to update user in MongoDB:', error);
-        // Continue with local update even if API fails
-      }
-    }
-  };
 
   const renderPage = () => {
     if (currentPage === 'landing') {
